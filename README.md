@@ -1,5 +1,11 @@
 # TIFX04-LEMA-DataProcessing
-Data processing for TIFX04-22-82, Bachelor thesis where we built and optimized a Linear ElectroMagnetic Massaccelerator (LEMA).
+Data processing for our Bachelor thesis in applied physics (TIFX04-22-82) where we built and optimized a linear electromagnetic accelerator (LEMA).
+
+Data processing:
+-Read CSV
+-Calculate numerical derivative to get speed from position
+-Apply gaussian filter for noise reduction
+-Write to CSV with a few tweaks to the data
 
 notes:
 need to fill in 
