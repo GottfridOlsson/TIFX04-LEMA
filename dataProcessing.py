@@ -2,7 +2,7 @@
 #        Name: TIFX04-22-82, DataProcessing LEMA
 #      Author: GOTTFRID OLSSON 
 #     Created: 2022-04-22, 13:55
-#     Updated: 2022-04-23, 14:10
+#     Updated: 2022-04-24, 14:10
 #       About: Takes in CSV-data från Qualisys measurement
 #              and applies gaussian filter and excecutes a
 #              numerical derivative to get velocity
@@ -128,8 +128,11 @@ plt.plot(t, v_z, label="Velocity_z (mm/s), filtered sigma="+str(sigma))
 plt.legend()
 #plt.show()
 
-
-header = ['Frame (processed)', ' Time (s)', ' Calculated velocity X (mm/s)', ' Calculated velocity Y (mm/s)', ' Calculated velocity Z (mm/s)']
+#time_startAtTequals0 = time - time
+time_milliSecond = time*1000
+v_x_meterPerSecond, v_y_meterPerSecond, v_z_meterPerSecond = -v_x/1000, -v_y/1000, -v_z/1000
+v_x, v_y, v_z = v_x_meterPerSecond, v_y_meterPerSecond, v_z_meterPerSecond
+header = ['Frame (processed)', ' Time (ms)', ' Calculated velocity X (m/s)', ' Calculated velocity Y (m/s)', ' Calculated velocity Z (m/s)']
 processedCSV_rows = merge_vectors_for_writeCSV(frame, t, v_x, v_y, v_z)
 write_data_to_CSV(writeFilePath_processedCSV, header, processedCSV_rows)
 
