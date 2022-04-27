@@ -18,8 +18,10 @@ import os                               # for get_filenames()
 
 ## CSV_handler ##
 CSV_DELIMITER = ','
+TSV_DELIMITER = '\t'
 rawTSVfolderRelativePath = "Raw TSV"
 headerRemovedTSVfolderRelativePath = "Formatted TSV"
+headerRemovedCSVfolderRelativePath = "Formatted CSV"
 backSlash = "\\"
 currentPath = os.path.abspath(os.getcwd())
 
@@ -71,11 +73,32 @@ def remove_Qualisys_header_from_rawTSV_and_write_new_files(filenames_rawTSV):
 
     print("DONE: Removed Qualisys header ("+str(numLinesRemove)+" lines) from TSV in: " + str(old_path) + "\n      and wrote files to formatted TSV in: " + str(new_path))
 
+
+def formatted_TSV_2_formatted_CSV(filenames_rawTSV, filenames_rawCSV):
+
+    TSV_path = currentPath + backSlash + headerRemovedTSVfolderRelativePath
+    CSV_path = currentPath + backSlash + headerRemovedCSVfolderRelativePath
+    for i in range(len(filenames_rawTSV)):
+        formattedTSV_path = TSV_path + backSlash + filenames_rawTSV[i]
+        formattedCSV_path = CSV_path + backSlash + filenames_rawCSV[i]
+
+        csv_table=pd.read_table(formattedTSV_path, sep=TSV_DELIMITER)
+        header = csv_table.columns.values
+        header_to_CSV = header[0:5] #last header value (6) is nonsense (extra tab) from Qualisys
+        csv_table.to_csv(formattedCSV_path, CSV_DELIMITER, columns=header_to_CSV, index=False) 
+    print("DONE: Converted formatted TSV into CSV in: " + str(CSV_path))
+
 ## MAIN ##
 
 filenames_rawTSV = get_filenames_RawTSV()
 filenames_rawCSV = replace_TSV_with_CSV_ending(filenames_rawTSV)
-remove_Qualisys_header_from_rawTSV_and_write_new_files(filenames_rawTSV)
+#remove_Qualisys_header_from_rawTSV_and_write_new_files(filenames_rawTSV) # run 2022-04-27, 09:xx
+#formatted_TSV_2_formatted_CSV(filenames_rawTSV, filenames_rawCSV) #run 2022-04-27, 10:47
+
+
+  
+
+
 
 
 #print("\n")
