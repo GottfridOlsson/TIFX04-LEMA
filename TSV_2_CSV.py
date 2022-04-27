@@ -12,7 +12,9 @@
 import pandas as pd                     # for CSV, TSV
 import os                               # for currentPath
 
+
 ## CONSTANTS ##
+
 CSV_DELIMITER = ','
 TSV_DELIMITER = '\t'
 
@@ -23,7 +25,8 @@ headerRemovedCSVfolderRelativePath = "Formatted CSV"
 backSlash = "\\"
 
 
-## FUNCTIONS ""  
+
+## FUNCTIONS ##
 
 def get_filenames_RawTSV():
     path = currentPath + backSlash + rawTSVfolderRelativePath
@@ -51,7 +54,7 @@ def remove_lines_from_file_and_write_new_file(oldFilePath, newFilepath, numberOf
     with open(newFilepath, 'w') as new:
         new.writelines(data[numberOfLines:])
 
-def remove_Qualisys_header_from_rawTSV_and_write_new_files(filenames_rawTSV):
+def remove_Qualisys_header_from_rawTSV_and_write_formattedTSV_files(filenames_rawTSV):
     rawTSV_filePaths = []
     formattedTSV_filePaths = []
     old_path = currentPath + backSlash + rawTSVfolderRelativePath 
@@ -74,10 +77,19 @@ def formatted_TSV_2_formatted_CSV(filenames_rawTSV, filenames_rawCSV):
         formattedTSV_path = TSV_path + backSlash + filenames_rawTSV[i]
         formattedCSV_path = CSV_path + backSlash + filenames_rawCSV[i]
 
+        # read TSV and convert to CSV with adjusted # of headers
         csv_table=pd.read_table(formattedTSV_path, sep=TSV_DELIMITER)
         header = csv_table.columns.values
         header_to_CSV = header[0:5] #last header value (6) is nonsense (extra tab) from Qualisys
-        csv_table.to_csv(formattedCSV_path, CSV_DELIMITER, columns=header_to_CSV, index=False) 
+        csv_table.to_csv(formattedCSV_path, CSV_DELIMITER, columns=header_to_CSV, index=False)
+
+        # add units to header
+        new_csv_table = pd.read_csv(formattedCSV_path, sep=CSV_DELIMITER)
+        new_header = new_csv_table.columns.values
+        new_header_to_CSV = [new_header[0], new_header[1]+" (s)", new_header[2]+" (mm)",  new_header[3]+" (mm)",  new_header[4]+" (mm)"] #add units
+        new_csv_table.columns = new_header_to_CSV
+        new_csv_table.to_csv(formattedCSV_path, CSV_DELIMITER, index=False)
+
     print("DONE: Converted formatted TSV into CSV in: " + str(CSV_path))
 
 
@@ -86,9 +98,11 @@ def formatted_TSV_2_formatted_CSV(filenames_rawTSV, filenames_rawCSV):
 
 filenames_rawTSV = get_filenames_RawTSV()
 filenames_rawCSV = replace_TSV_with_CSV_ending(filenames_rawTSV)
-remove_Qualisys_header_from_rawTSV_and_write_new_files(filenames_rawTSV) # run 2022-04-27, 09:xx
-formatted_TSV_2_formatted_CSV(filenames_rawTSV, filenames_rawCSV) #run 2022-04-27, 10:47
+remove_Qualisys_header_from_rawTSV_and_write_formattedTSV_files(filenames_rawTSV) # run 2022-04-27, 09:xx
+formatted_TSV_2_formatted_CSV(filenames_rawTSV, filenames_rawCSV)        #run 2022-04-27, 10:47
 
 print("DONE: Code ran successfully!")
 
-#EOF
+
+
+## EOF ##
