@@ -13,6 +13,7 @@
 
 import os
 import csv
+from unittest import result
 import pandas as pd                     # for CSV
 import numpy as np
 import matplotlib.pyplot as plt
@@ -108,18 +109,49 @@ def get_columnData_from_CSV(filePath, column):
 
 def get_part_of_string(string, startIndexInclusive, endIndexInclusive):
     result = string[startIndexInclusive-1:endIndexInclusive]
-    print(result)
     return result
 
-# YOU ARE HERE! //2022-04-27, 11:48
+def get_columnData_from_CSV_files(filePaths, column):
+    columnData = []
+    for i in range(len(filePaths)):
+        columnData.append(get_columnData_from_CSV(filePaths[i], column))
+    return columnData
+
+def get_Xpos_header_from_S_files(filenames):
+    S_numbers = []
+    S_header= []
+    for i in range(len(filenames)):
+        S_numbers.append( get_part_of_string(filenames[i], 1, 3) )#gives start  to set as header for new CSV-file, e.g. "S13" or "S20"
+        S_header.append( S_numbers[i] + " X-position (mm)")
+    return S_header
+
+def create_dataFrame_S_time_and_Xpos_data(filePaths, filenames):
+    XposData  = get_columnData_from_CSV_files(filePaths, 2)
+    timeData  = get_columnData_from_CSV(filePaths[0], 1)
+    header    = get_Xpos_header_from_S_files(filenames)
+    dataFrame = pd.DataFrame(XposData, header).transpose()
+    dataFrame.insert(loc=0, column='Time (s)', value=timeData)
+    return dataFrame
+
+def write_dataFrame_to_CSV(dataFrame, filePath_CSV):
+    dataFrame.to_csv(filePath_CSV, CSV_DELIMITER, index=False)
+    print("DONE: Write dataFrame to CSV: " + str(filePath_CSV))
+
 get_columnData_from_CSV(filePaths_S[0], 0) #gets columndata (x) for all files, do loop
 get_part_of_string(filenames_S[0], 1, 3) #gives start of "S13" to set as header for new CSV-file
 
+get_columnData_from_CSV_files(filePaths_S, 2)
+get_Xpos_header_from_S_files(filenames_S)
 
-
-
+dataFrame_S = create_dataFrame_S_time_and_Xpos_data(filePaths_S, filenames_S)
+write_dataFrame_to_CSV(dataFrame_S, formatted_CSV_folder_path + backSlash + "S13_through_S23_time_Xpos.csv")
 
 quit()
+
+
+
+
+
 
 ## MAIN ##
 
