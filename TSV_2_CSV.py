@@ -2,36 +2,28 @@
 #        Name: TIFX04-22-82, DataProcessing LEMA
 #      Author: GOTTFRID OLSSON 
 #     Created: 2022-04-27, 09:41
-#     Updated: 2022-04-24, 14:10
+#     Updated: 2022-04-27, 10:49
 #       About: Takes in TSV-file from Qualisys measurement
 #              and converts it into CSV as well as removing
 #              unncecessary header from Qualisys
 ##---------------------------------------------------------##
 
-# COMMENTS/NOTES:
-#   make functions to do the smoothing and removinf of zeroes ?
-#
-#
 
 import pandas as pd                     # for CSV, TSV
-import os                               # for get_filenames()
+import os                               # for currentPath
 
-## CSV_handler ##
+## CONSTANTS ##
 CSV_DELIMITER = ','
 TSV_DELIMITER = '\t'
+
+currentPath = os.path.abspath(os.getcwd())
 rawTSVfolderRelativePath = "Raw TSV"
 headerRemovedTSVfolderRelativePath = "Formatted TSV"
 headerRemovedCSVfolderRelativePath = "Formatted CSV"
 backSlash = "\\"
-currentPath = os.path.abspath(os.getcwd())
-
-  
-#tsv_file='GfG.tsv'
-#csv_table=pd.read_table(tsv_file,sep='\t') 
-#csv_table.to_csv('GfG.csv',index=False)  
-#print("Successfully made csv file")
 
 
+## FUNCTIONS ""  
 
 def get_filenames_RawTSV():
     path = currentPath + backSlash + rawTSVfolderRelativePath
@@ -88,23 +80,15 @@ def formatted_TSV_2_formatted_CSV(filenames_rawTSV, filenames_rawCSV):
         csv_table.to_csv(formattedCSV_path, CSV_DELIMITER, columns=header_to_CSV, index=False) 
     print("DONE: Converted formatted TSV into CSV in: " + str(CSV_path))
 
+
+
 ## MAIN ##
 
 filenames_rawTSV = get_filenames_RawTSV()
 filenames_rawCSV = replace_TSV_with_CSV_ending(filenames_rawTSV)
-#remove_Qualisys_header_from_rawTSV_and_write_new_files(filenames_rawTSV) # run 2022-04-27, 09:xx
-#formatted_TSV_2_formatted_CSV(filenames_rawTSV, filenames_rawCSV) #run 2022-04-27, 10:47
+remove_Qualisys_header_from_rawTSV_and_write_new_files(filenames_rawTSV) # run 2022-04-27, 09:xx
+formatted_TSV_2_formatted_CSV(filenames_rawTSV, filenames_rawCSV) #run 2022-04-27, 10:47
 
-
-  
-
-
-
-
-#print("\n")
-#print(filenames_rawTSV)
-#print(filenames_rawCSV)
-
-
+print("DONE: Code ran successfully!")
 
 #EOF
