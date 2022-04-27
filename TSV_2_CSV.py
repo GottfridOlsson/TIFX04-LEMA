@@ -2,10 +2,11 @@
 #        Name: TIFX04-22-82, DataProcessing LEMA
 #      Author: GOTTFRID OLSSON 
 #     Created: 2022-04-27, 09:41
-#     Updated: 2022-04-27, 10:49
+#     Updated: 2022-04-27, 11:25
 #       About: Takes in TSV-file from Qualisys measurement
 #              and converts it into CSV as well as removing
-#              unncecessary header from Qualisys
+#              unncecessary header from Qualisys and adding
+#              corresponding units in header.
 ##---------------------------------------------------------##
 
 

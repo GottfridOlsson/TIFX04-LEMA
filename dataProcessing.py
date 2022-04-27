@@ -2,18 +2,16 @@
 #        Name: TIFX04-22-82, DataProcessing LEMA
 #      Author: GOTTFRID OLSSON 
 #     Created: 2022-04-22, 13:55
-#     Updated: 2022-04-24, 14:10
+#     Updated: 2022-04-27, 11:38
 #       About: Takes in CSV-data från Qualisys measurement
 #              and applies gaussian filter and excecutes a
 #              numerical derivative to get velocity
 #              Saves processed data to another CSV-file
 ##---------------------------------------------------------##
 
-# COMMENTS/NOTES:
-#   make functions to do the smoothing and removinf of zeroes ?
-#
-#
 
+
+import os
 import csv
 import pandas as pd                     # for CSV
 import numpy as np
@@ -75,6 +73,53 @@ def gaussianFilter1D(array1D, sigma):
     return gaussian_filter1d(array1D, sigma)
 
 
+# FILE PATHS #
+
+def get_filePaths_ofFilenames_inFolder(filePathToFolder, filenames):
+    filePaths = []
+    for i in range(len(filenames)):
+        filePaths.append(filePathToFolder + backSlash + filenames[i])
+    return filePaths
+
+
+
+## CONSTANTS FOR THIS PROJECT ##
+
+currentPath = os.path.abspath(os.getcwd())
+backSlash = "\\"
+formatted_CSV_folder_path = currentPath + backSlash + "Formatted CSV"
+
+# S for 'final measurements of speed (10m/s)' and DX for 'Diode x-position'
+filenames_S  = ['S13_20220426_1524.csv', 'S14_20220426_1526.csv', 'S15_20220426_1529.csv', 'S16_20220426_1534.csv', 'S17_20220426_1539.csv', 'S18_20220426_1547.csv', 'S19_20220426_1550.csv', 'S20_20220426_1552.csv', 'S21_20220426_1605.csv', 'S22_20220426_1609.csv', 'S23_20220426_1612.csv']
+filenames_DX = ['DX_32mm_20220426.csv',  'DX_33mm_20220426.csv',  'DX_34mm_20220426.csv',  'DX_35mm_20220426.csv',  'DX_36mm_20220426.csv',  'DX_37mm_20220426.csv',  'DX_38mm_20220426.csv',  'DX_39mm_20220426.csv',  'DX_40mm_20220426.csv',  'DX_41mm_20220426.csv',  'DX_42mm_20220426.csv',  'DX_43mm_20220426.csv',  'DX_44mm_20220426.csv']
+filePaths_S  = get_filePaths_ofFilenames_inFolder(formatted_CSV_folder_path, filenames_S)
+filePaths_DX = get_filePaths_ofFilenames_inFolder(formatted_CSV_folder_path, filenames_DX)
+
+
+
+# small main #
+
+
+def get_columnData_from_CSV(filePath, column):
+    CSV = read_CSV(filePath)
+    header = get_CSV_header(CSV)
+    columnData = CSV[header[column]]
+    return columnData
+
+def get_part_of_string(string, startIndexInclusive, endIndexInclusive):
+    result = string[startIndexInclusive-1:endIndexInclusive]
+    print(result)
+    return result
+
+# YOU ARE HERE! //2022-04-27, 11:48
+get_columnData_from_CSV(filePaths_S[0], 0) #gets columndata (x) for all files, do loop
+get_part_of_string(filenames_S[0], 1, 3) #gives start of "S13" to set as header for new CSV-file
+
+
+
+
+
+quit()
 
 ## MAIN ##
 
