@@ -1,0 +1,59 @@
+## MAIN ## from dataProcessing, 2022-04-27, 16:02
+
+filename_rawCSV = 'IckeOptimeradeTriggers_300V_20220422_1150' #needs to be filled in manually
+readFilePath_rawCSV = "RAW CSV/"+str(filename_rawCSV) + ".csv"
+
+filename_processedCSV = filename_rawCSV + "_processed_20220424_1122" #needs to be filled in manually
+writeFilePath_processedCSV = "Gaussed and derivative CSV/"+str(filename_processedCSV) + ".csv"
+
+rawData = read_CSV(readFilePath_rawCSV)
+header = get_CSV_header(rawData)
+
+frame = rawData[header[0]]
+time  = rawData[header[1]]
+rawX  = rawData[header[2]]
+rawY  = rawData[header[3]]
+rawZ  = rawData[header[4]]
+
+showMultipleSigma = False #set to true if you want plot for several values for sigma in gauss filter
+
+[rawX_noZeroes, time_noZeroes, frame_noZeroes] = remove_zeroValues(rawX, time, frame)
+[rawY_noZeroes, _, _] = remove_zeroValues(rawY, time, frame)
+[rawZ_noZeroes, _, _] = remove_zeroValues(rawZ, time, frame)
+
+sigma = 5 #3-4 looks pretty good; 5-6 looks very smooth and nice, //2022-04-23
+x_filtered = gaussianFilter1D(rawX_noZeroes, sigma)
+y_filtered = gaussianFilter1D(rawY_noZeroes, sigma)
+z_filtered = gaussianFilter1D(rawZ_noZeroes, sigma)
+
+frame, t = frame_noZeroes, time_noZeroes
+x, y, z = x_filtered, y_filtered, z_filtered
+v_x, v_y, v_z = np.gradient(x)/np.gradient(t), np.gradient(y)/np.gradient(t), np.gradient(z)/np.gradient(t)
+v_x_nofilter, v_y_nofilter, v_z_nofilter = np.gradient(rawX_noZeroes)/np.gradient(t), np.gradient(rawY_noZeroes)/np.gradient(t), np.gradient(rawZ_noZeroes)/np.gradient(t)
+
+plt.plot(t, v_x_nofilter, '-', label="Velocity_x (mm/s), unfiltered")
+#plt.plot(t, v_y_nofilter, ':', label="Velocity_y (mm/s), unfiltered")
+#plt.plot(t, v_z_nofilter, '.-', label="Velocity_z (mm/s), unfiltered")
+
+if showMultipleSigma:
+    x_filteredArray=[]
+    for i in range(2,5,1):
+        sigma_loop = i+1
+        x_filteredArray=gaussianFilter1D(rawX_noZeroes, sigma_loop)
+        print(x_filteredArray)
+        v = np.gradient(x_filteredArray)/np.gradient(t)
+        plt.plot(t, v, label="Velocity_x (mm/s), filtered sigma="+str(sigma_loop))
+
+plt.plot(t, v_x, label="Velocity_x (mm/s), filtered sigma="+str(sigma))
+plt.plot(t, v_y, label="Velocity_y (mm/s), filtered sigma="+str(sigma))
+plt.plot(t, v_z, label="Velocity_z (mm/s), filtered sigma="+str(sigma))
+plt.legend()
+#plt.show()
+
+#time_startAtTequals0 = time - time
+time_milliSecond = time*1000
+v_x_meterPerSecond, v_y_meterPerSecond, v_z_meterPerSecond = -v_x/1000, -v_y/1000, -v_z/1000
+v_x, v_y, v_z = v_x_meterPerSecond, v_y_meterPerSecond, v_z_meterPerSecond
+header = ['Frame (processed)', ' Time (ms)', ' Calculated velocity X (m/s)', ' Calculated velocity Y (m/s)', ' Calculated velocity Z (m/s)']
+processedCSV_rows = merge_vectors_for_writeCSV(frame, t, v_x, v_y, v_z)
+write_data_to_CSV(writeFilePath_processedCSV, header, processedCSV_rows)

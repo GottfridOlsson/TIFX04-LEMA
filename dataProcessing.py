@@ -2,7 +2,7 @@
 #        Name: TIFX04-22-82, DataProcessing LEMA
 #      Author: GOTTFRID OLSSON 
 #     Created: 2022-04-22, 13:55
-#     Updated: 2022-04-27, 11:38
+#     Updated: 2022-04-27, 17:33
 #       About: Takes in CSV-data från Qualisys measurement
 #              and applies gaussian filter and excecutes a
 #              numerical derivative to get velocity
@@ -55,19 +55,19 @@ def merge_vectors_for_writeCSV(frame, time, x, y, z): #ad hoc, only use this for
 
 ## DATA PROCESSING ##
 
-def remove_zeroValues(position, time, frame):
+def remove_zeroValues(position, time):#, *frame): #frame removed, 2022-04-27
     position_noZeroes = []
     time_noZeroes = []
-    frame_noZeroes = []
+    #frame_noZeroes = []
 
     for i in range(len(position)):
         if position[i] != 0.000:
             position_noZeroes.append(position[i])
             time_noZeroes.append(time[i])
-            frame_noZeroes.append(frame[i])
+            #frame_noZeroes.append(frame[i])
     
-    print("DONE: Removed values with '0.000' from position and time and frame vectors")
-    return position_noZeroes, time_noZeroes, frame_noZeroes
+    print("DONE: Removed values with '0.000' from position and time vectors")
+    return position_noZeroes, time_noZeroes#, frame_noZeroes
 
 def gaussianFilter1D(array1D, sigma):
     print("DONE: Filtered data with sigma="+str(sigma))
@@ -95,10 +95,8 @@ filenames_S  = ['S13_20220426_1524.csv', 'S14_20220426_1526.csv', 'S15_20220426_
 filenames_DX = ['DX_32mm_20220426.csv',  'DX_33mm_20220426.csv',  'DX_34mm_20220426.csv',  'DX_35mm_20220426.csv',  'DX_36mm_20220426.csv',  'DX_37mm_20220426.csv',  'DX_38mm_20220426.csv',  'DX_39mm_20220426.csv',  'DX_40mm_20220426.csv',  'DX_41mm_20220426.csv',  'DX_42mm_20220426.csv',  'DX_43mm_20220426.csv',  'DX_44mm_20220426.csv']
 filePaths_S  = get_filePaths_ofFilenames_inFolder(formatted_CSV_folder_path, filenames_S)
 filePaths_DX = get_filePaths_ofFilenames_inFolder(formatted_CSV_folder_path, filenames_DX)
+filePath_S13_through_S23_time_Xpos = formatted_CSV_folder_path + backSlash + "S13_through_S23_time_Xpos_20220427.csv"
 
-
-
-# small main #
 
 
 def get_columnData_from_CSV(filePath, column):
@@ -137,23 +135,92 @@ def write_dataFrame_to_CSV(dataFrame, filePath_CSV):
     dataFrame.to_csv(filePath_CSV, CSV_DELIMITER, index=False)
     print("DONE: Write dataFrame to CSV: " + str(filePath_CSV))
 
-get_columnData_from_CSV(filePaths_S[0], 0) #gets columndata (x) for all files, do loop
-get_part_of_string(filenames_S[0], 1, 3) #gives start of "S13" to set as header for new CSV-file
-
-get_columnData_from_CSV_files(filePaths_S, 2)
-get_Xpos_header_from_S_files(filenames_S)
-
-dataFrame_S = create_dataFrame_S_time_and_Xpos_data(filePaths_S, filenames_S)
-write_dataFrame_to_CSV(dataFrame_S, formatted_CSV_folder_path + backSlash + "S13_through_S23_time_Xpos.csv")
-
-quit()
-
-
 
 
 
 
 ## MAIN ##
+
+S13_through_S23_analysis = True
+
+
+
+if S13_through_S23_analysis:
+    filePath = filePath_S13_through_S23_time_Xpos
+    dataFrame_S = create_dataFrame_S_time_and_Xpos_data(filePaths_S, filenames_S)
+    write_dataFrame_to_CSV(dataFrame_S, filePath)
+
+    data = read_CSV(filePath) #data is: 0 = time, 1 = Xpos S13, 2 = Xpos S14, 3 = Xpos S15, ...
+    header = get_CSV_header(data)
+    Xpos_range = range(1,12) #which Xpos_S columns to keep in analysis #removed 3 since that data looked wrong, lablogg said so too //2022-04-27
+    column_start = min(Xpos_range)
+    time = data[header[0]]
+
+    # apply gaussian for each column in Xpos_range before velcity calc
+    sigma = 5 #arbitrarily chosen as 5
+    Xpos_S_gaussed = [None for x in Xpos_range]
+    V_x_S  = [None for x in Xpos_range]
+    time_S = [None for x in Xpos_range]
+ 
+    for i in Xpos_range:
+        # gauss filter per column (Xpos for each S-measurement)
+        Xpos_S_i = data[header[i]]
+        [Xpos_S_i_noZeroes, time_noZeroes] = remove_zeroValues(Xpos_S_i, time)
+        Xpos_S_gaussed[i-column_start] = gaussianFilter1D(Xpos_S_i_noZeroes, sigma)
+
+        # get velocity in x-axis by use of gradient (negative since Qualisys defines coordinate system different from us)
+        V_x_S[i-column_start] = -np.gradient(Xpos_S_gaussed[i-column_start])/np.gradient(time_noZeroes)
+
+        # remove values from velocity that are below a certain lower limit (+ som buffer rows(?)) to align S-measurements in time with each other
+        V_x_S_i = V_x_S[i-column_start]
+        minSpeed = 80 #mm/s
+        indexes = V_x_S_i > minSpeed
+        V_x_S_i_selected = V_x_S_i[indexes]
+        time_selected = []
+        for j in range(len(time_noZeroes)): #ugly way of saying: "time_selected = time_noZeroes[indexes]", but since i get error otherwise I dont care if its ugly //2022-04-27
+            if indexes[j]:
+                time_selected.append(time_noZeroes[j])
+
+        removeNumLastDataPoints = 20 #remove last 20 points, since numerical derivative gets funky there
+        V_x_S_i_selected = V_x_S_i_selected[0:len(V_x_S_i_selected)-removeNumLastDataPoints]
+        time_selected = time_selected[0:len(time_selected)-removeNumLastDataPoints]
+
+        
+        # plot to see how it looks
+        t = time_selected
+        time_S[i-column_start] = t
+        V_x = V_x_S_i_selected
+        V_x_S[i-column_start] = V_x
+        if i != 3: #remove S15 which had bad data from Qualisys
+            plt.plot(t, V_x, label=str(header[i])+" (calc dx/dt, sigma="+str(sigma)+")")
+        
+
+    plt.legend()
+    plt.show()
+    print(V_x_S)
+
+    # YOU ARE HERE//2022-04-27, 17:32
+    ## TODO: ##
+    # take V_x_S (filtered sigma=5 above), put in one CSV-file with new time-assignment s.t. every V_x_S starts at time t=0 and ticks up in \Deltat=0.0001 s
+
+    #write to CSV with "_Xvel_sigma5" ending
+    # plot all in PlotData, see if it looks good
+    # calculate average and plot that in PlotData also, to see if everything looks good
+    # export figures to appendix and result
+
+
+
+
+
+
+
+
+
+    quit()
+    
+
+
+
 
 filename_rawCSV = 'IckeOptimeradeTriggers_300V_20220422_1150' #needs to be filled in manually
 readFilePath_rawCSV = "RAW CSV/"+str(filename_rawCSV) + ".csv"
