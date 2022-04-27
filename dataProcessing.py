@@ -82,7 +82,7 @@ filename_rawCSV = 'IckeOptimeradeTriggers_300V_20220422_1150' #needs to be fille
 readFilePath_rawCSV = "RAW CSV/"+str(filename_rawCSV) + ".csv"
 
 filename_processedCSV = filename_rawCSV + "_processed_20220424_1122" #needs to be filled in manually
-writeFilePath_processedCSV = "Processed CSV/"+str(filename_processedCSV) + ".csv"
+writeFilePath_processedCSV = "Gaussed and derivative CSV/"+str(filename_processedCSV) + ".csv"
 
 rawData = read_CSV(readFilePath_rawCSV)
 header = get_CSV_header(rawData)
