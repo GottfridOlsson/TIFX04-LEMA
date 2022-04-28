@@ -13,11 +13,9 @@
 
 import os
 import csv
-from unittest import result
 import pandas as pd                     # for CSV
 import numpy as np
 import matplotlib.pyplot as plt
-from pyparsing import col
 from scipy.ndimage import gaussian_filter1d
 
 
@@ -42,17 +40,6 @@ def write_data_to_CSV(filenamePath, header, data):
     print("DONE: Write data to CSV-file: "+str(filenamePath))
 
 
-# ASSEMBLE VECTORS INTO ARRAY FOR WRITE_2_CSV #
-
-def merge_vectors_for_writeCSV(frame, time, x, y, z): #ad hoc, only use this for THIS particular file; ugly but fast coding
-    merged_vector = []
-    for i in range(len(time)):
-        temp_merge = frame[i], time[i], x[i], y[i], z[i]
-        merged_vector.append(temp_merge)
-
-    print("DONE: Merged vectors into one array for writeCSV")
-    return merged_vector
-
 
 ## DATA PROCESSING ##
 
@@ -67,11 +54,11 @@ def remove_zeroValues(position, time):#, *frame): #frame removed, 2022-04-27
             time_noZeroes.append(time[i])
             #frame_noZeroes.append(frame[i])
     
-    print("DONE: Removed values with '0.000' from position and time vectors")
+    #print("DONE: Removed values with '0.000' from position and time vectors")
     return position_noZeroes, time_noZeroes#, frame_noZeroes
 
 def gaussianFilter1D(array1D, sigma):
-    print("DONE: Filtered data with sigma="+str(sigma))
+    #print("DONE: Filtered data with sigma="+str(sigma))
     return gaussian_filter1d(array1D, sigma)
 
 
@@ -85,19 +72,30 @@ def get_filePaths_ofFilenames_inFolder(filePathToFolder, filenames):
 
 
 
+
 ## CONSTANTS FOR THIS PROJECT ##
 
 currentPath = os.path.abspath(os.getcwd())
 backSlash = "\\"
+raw_CSV_folder_path       = currentPath + backSlash + "Raw CSV"
 formatted_CSV_folder_path = currentPath + backSlash + "Formatted CSV"
 processed_CSV_folder_path = currentPath + backSlash + "Processed CSV"
 # S for 'final measurements of speed (10m/s)' and DX for 'Diode x-position'
 filenames_S  = ['S13_20220426_1524.csv', 'S14_20220426_1526.csv', 'S15_20220426_1529.csv', 'S16_20220426_1534.csv', 'S17_20220426_1539.csv', 'S18_20220426_1547.csv', 'S19_20220426_1550.csv', 'S20_20220426_1552.csv', 'S21_20220426_1605.csv', 'S22_20220426_1609.csv', 'S23_20220426_1612.csv']
 filenames_DX = ['DX_32mm_20220426.csv',  'DX_33mm_20220426.csv',  'DX_34mm_20220426.csv',  'DX_35mm_20220426.csv',  'DX_36mm_20220426.csv',  'DX_37mm_20220426.csv',  'DX_38mm_20220426.csv',  'DX_39mm_20220426.csv',  'DX_40mm_20220426.csv',  'DX_41mm_20220426.csv',  'DX_42mm_20220426.csv',  'DX_43mm_20220426.csv',  'DX_44mm_20220426.csv']
+filenames_I  = ['I_Steg1_20220426.csv', 'I_Steg2_20220426.csv', 'I_Steg3_20220426.csv', 'I_Steg4_20220426.csv', 'I_Steg5_20220426.csv']
+filenames_I_allCoils = ['I_allCoils_20220426.csv']
 filePaths_S  = get_filePaths_ofFilenames_inFolder(formatted_CSV_folder_path, filenames_S)
 filePaths_DX = get_filePaths_ofFilenames_inFolder(formatted_CSV_folder_path, filenames_DX)
+filePaths_I  = get_filePaths_ofFilenames_inFolder(raw_CSV_folder_path,       filenames_I)
 filePath_S13_through_S23_time_Xpos           = formatted_CSV_folder_path + backSlash + "S_time_Xpos_20220428.csv"
 filePath_processed_S13_through_S23_time_Xvel = processed_CSV_folder_path + backSlash + "S_time_Xvel_20220428_sigma5.csv"
+
+filePath_simulated_S_data_CSV           = formatted_CSV_folder_path + backSlash + "Simulated_S_data_20220428.csv" 
+filePath_processed_and_simulated_S_data = processed_CSV_folder_path + backSlash + "Processed_and_simulated_S_Xvel_sigma5_20220428.csv"
+
+filePath_I_all_individual_coils = raw_CSV_folder_path + backSlash + "I_Steg12345_20220428.csv"
+
 
 
 def get_columnData_from_CSV(filePath, column):
@@ -125,7 +123,7 @@ def get_custom_header_from_S_files(filenames, endHeaderString):
     return S_header
 
 def create_dataFrame_S_time_and_Xpos_data(filePaths, filenames):
-    XposData  = get_columnData_from_CSV_files(filePaths, 2)
+    XposData  = get_columnData_from_CSV_files(filePaths, 2) #2 for X-position
     timeData  = get_columnData_from_CSV(filePaths[0], 1)
     header    = get_custom_header_from_S_files(filenames, " X-position (mm)")
     dataFrame = pd.DataFrame(XposData, header).transpose()
@@ -137,6 +135,23 @@ def write_dataFrame_to_CSV(dataFrame, filePath_CSV):
     print("DONE: Write dataFrame to CSV: " + str(filePath_CSV))
 
 
+def add_all_columns_from_CSV_to_CSV(from_CSV_path, CSV_path, new_CSV_path):
+    from_CSV = read_CSV(from_CSV_path)
+    from_header = get_CSV_header(from_CSV)
+
+    CSV = read_CSV(CSV_path)
+    header = get_CSV_header(CSV)
+
+    for i in range(len(from_header)):
+        columnHeader = from_header[i]
+        columnData = from_CSV[columnHeader]
+        CSV.insert(loc=len(header)+i, column=columnHeader, value=columnData)
+
+    CSV.to_csv(new_CSV_path, CSV_DELIMITER, index=False)
+    print("DONE: Added all columns from " + str(from_CSV_path) + " \n      to " + str(new_CSV_path))
+
+
+
 
 
 
@@ -144,11 +159,14 @@ def write_dataFrame_to_CSV(dataFrame, filePath_CSV):
 
 S_analysis = True #measurements S13-S23 taken 20220426
 plot_Sdata = False #plot "gaussed and derivative and noZeroed"-data
+add_simulatedData_to_S = True
 
+I_coils_analysis = False
 DX_analysis = False
 
 
 if S_analysis:
+    print("ANALYSIS: S-measurements")
     filePath = filePath_S13_through_S23_time_Xpos
     processedFilePath = filePath_processed_S13_through_S23_time_Xvel
     dataFrame_S = create_dataFrame_S_time_and_Xpos_data(filePaths_S, filenames_S)
@@ -237,73 +255,23 @@ if S_analysis:
     V_x_dataFrame.insert(loc=0, column='Average dx/dt (m/s)', value=V_x_average)
     V_x_dataFrame.insert(loc=0, column='Arbitrary start time (ms)', value=arbitraryStartTime_ms)
     write_dataFrame_to_CSV(V_x_dataFrame, processedFilePath)
+
+    if add_simulatedData_to_S:
+        print("ANALYSIS: S-measurements: added simulated data to S-file")
+        add_all_columns_from_CSV_to_CSV(filePath_simulated_S_data_CSV, processedFilePath, filePath_processed_and_simulated_S_data)
     
     
     quit()
     
 
+if I_coils_analysis:
+    print("ANALYSIS: current through coils")
+    for i in range(len(filePaths_I)):
+        add_all_columns_from_CSV_to_CSV(filePaths_I[i], filePaths_I[0], filePath_I_all_individual_coils)
 
 
-seeOldCode = False
-if seeOldCode:
 
-    filename_rawCSV = 'IckeOptimeradeTriggers_300V_20220422_1150' #needs to be filled in manually
-    readFilePath_rawCSV = "RAW CSV/"+str(filename_rawCSV) + ".csv"
 
-    filename_processedCSV = filename_rawCSV + "_processed_20220424_1122" #needs to be filled in manually
-    writeFilePath_processedCSV = "Gaussed and derivative CSV/"+str(filename_processedCSV) + ".csv"
-
-    rawData = read_CSV(readFilePath_rawCSV)
-    header = get_CSV_header(rawData)
-
-    frame = rawData[header[0]]
-    time  = rawData[header[1]]
-    rawX  = rawData[header[2]]
-    rawY  = rawData[header[3]]
-    rawZ  = rawData[header[4]]
-
-    showMultipleSigma = False #set to true if you want plot for several values for sigma in gauss filter
-
-    [rawX_noZeroes, time_noZeroes, frame_noZeroes] = remove_zeroValues(rawX, time, frame)
-    [rawY_noZeroes, _, _] = remove_zeroValues(rawY, time, frame)
-    [rawZ_noZeroes, _, _] = remove_zeroValues(rawZ, time, frame)
-
-    sigma = 5 #3-4 looks pretty good; 5-6 looks very smooth and nice, //2022-04-23
-    x_filtered = gaussianFilter1D(rawX_noZeroes, sigma)
-    y_filtered = gaussianFilter1D(rawY_noZeroes, sigma)
-    z_filtered = gaussianFilter1D(rawZ_noZeroes, sigma)
-
-    frame, t = frame_noZeroes, time_noZeroes
-    x, y, z = x_filtered, y_filtered, z_filtered
-    v_x, v_y, v_z = np.gradient(x)/np.gradient(t), np.gradient(y)/np.gradient(t), np.gradient(z)/np.gradient(t)
-    v_x_nofilter, v_y_nofilter, v_z_nofilter = np.gradient(rawX_noZeroes)/np.gradient(t), np.gradient(rawY_noZeroes)/np.gradient(t), np.gradient(rawZ_noZeroes)/np.gradient(t)
-
-    plt.plot(t, v_x_nofilter, '-', label="Velocity_x (mm/s), unfiltered")
-    #plt.plot(t, v_y_nofilter, ':', label="Velocity_y (mm/s), unfiltered")
-    #plt.plot(t, v_z_nofilter, '.-', label="Velocity_z (mm/s), unfiltered")
-
-    if showMultipleSigma:
-        x_filteredArray=[]
-        for i in range(2,5,1):
-            sigma_loop = i+1
-            x_filteredArray=gaussianFilter1D(rawX_noZeroes, sigma_loop)
-            print(x_filteredArray)
-            v = np.gradient(x_filteredArray)/np.gradient(t)
-            plt.plot(t, v, label="Velocity_x (mm/s), filtered sigma="+str(sigma_loop))
-
-    plt.plot(t, v_x, label="Velocity_x (mm/s), filtered sigma="+str(sigma))
-    plt.plot(t, v_y, label="Velocity_y (mm/s), filtered sigma="+str(sigma))
-    plt.plot(t, v_z, label="Velocity_z (mm/s), filtered sigma="+str(sigma))
-    plt.legend()
-    #plt.show()
-
-    #time_startAtTequals0 = time - time
-    time_milliSecond = time*1000
-    v_x_meterPerSecond, v_y_meterPerSecond, v_z_meterPerSecond = -v_x/1000, -v_y/1000, -v_z/1000
-    v_x, v_y, v_z = v_x_meterPerSecond, v_y_meterPerSecond, v_z_meterPerSecond
-    header = ['Frame (processed)', ' Time (ms)', ' Calculated velocity X (m/s)', ' Calculated velocity Y (m/s)', ' Calculated velocity Z (m/s)']
-    processedCSV_rows = merge_vectors_for_writeCSV(frame, t, v_x, v_y, v_z)
-    write_data_to_CSV(writeFilePath_processedCSV, header, processedCSV_rows)
 
     quit()
 
