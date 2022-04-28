@@ -145,6 +145,8 @@ def write_dataFrame_to_CSV(dataFrame, filePath_CSV):
 S_analysis = True #measurements S13-S23 taken 20220426
 plot_Sdata = False #plot "gaussed and derivative and noZeroed"-data
 
+DX_analysis = False
+
 
 if S_analysis:
     filePath = filePath_S13_through_S23_time_Xpos
@@ -172,124 +174,138 @@ if S_analysis:
         Xpos_S_gaussed[i-column_start] = gaussianFilter1D(Xpos_S_i_noZeroes, sigma)
 
         # get velocity in x-axis by use of gradient (negative since Qualisys defines coordinate system different from us)
-        V_x_S[i-column_start] = -np.gradient(Xpos_S_gaussed[i-column_start])/np.gradient(time_noZeroes)
+        V_x_S[i-column_start] = -(np.gradient(Xpos_S_gaussed[i-column_start])/np.gradient(time_noZeroes))/1000 #div 1000 to mm/s --> m/s
 
         # remove values from velocity that are below a certain lower limit (+ som buffer rows(?)) to align S-measurements in time with each other
         V_x_S_i = V_x_S[i-column_start]
-        minSpeed = 80 #mm/s
-        indexes = V_x_S_i > minSpeed
-        V_x_S_i_selected = V_x_S_i[indexes]
-        time_selected = []
-        for j in range(len(time_noZeroes)): #ugly way of saying: "time_selected = time_noZeroes[indexes]", but since i get error otherwise I dont care if its ugly //2022-04-27
-            if indexes[j]:
-                time_selected.append(time_noZeroes[j])
+        minSpeed = 80/1000 # 50 mm/s = 50/1000 m/s
+        for k in range(len(V_x_S_i)):
+            if V_x_S_i[k] > minSpeed:
+                firstFastIndex = k
+                break
+        numIndexesBeforeMinSpeed = 50 #in order to get data where dx/dt = 0 in figure
+        indexes = range(firstFastIndex-numIndexesBeforeMinSpeed, len(V_x_S_i))
+
+        #indexes = V_x_S_i > minSpeed
+        #indexes_numbers = 
+        V_x_S_i_selected = [V_x_S_i[x] for x in indexes]
+        time_selected    = [time_noZeroes[x] for x in indexes]
+        #time_selected = []
+        #for j in range(len(time_noZeroes)): #ugly way of saying: "time_selected = time_noZeroes[indexes]", but since i get error otherwise I dont care if its ugly //2022-04-27
+        #    if indexes[j]:
+        #        time_selected.append(time_noZeroes[j])
 
         removeNumLastDataPoints = 20 #remove last 20 points, since numerical derivative gets funky there
         V_x_S_i_selected = V_x_S_i_selected[0:len(V_x_S_i_selected)-removeNumLastDataPoints]
-        time_selected = time_selected[0:len(time_selected)-removeNumLastDataPoints]
-
-        
+        time_selected    = time_selected[0:len(time_selected)-removeNumLastDataPoints]
+     
         # plot to make sure it looks good
         t = time_selected
         time_S[i-column_start] = t
         V_x = V_x_S_i_selected
         V_x_S[i-column_start] = V_x
         
-        if i != 3: #remove S15 which had bad data from Qualisys
+        if i != 3: #remove S15 which had bad data from Qualisys, 2022-04-27
             plt.plot(t, V_x, label=str(header[i])+" (calc dx/dt, sigma="+str(sigma)+")")
-        
-        
+    
     if plot_Sdata:
         plt.legend()
         plt.show()
 
+    # remove end points of vectors s.t. they become only as long as the shortest (for average later)
+    V_x_S_temp = V_x_S.copy()
+    V_x_S_temp.pop(2) #remove S15 measurement
+    V_x_S_selected = V_x_S_temp 
+
+    minVectorLen = len(min(V_x_S_selected, key=len))
+    V_x_S_cut = V_x_S_selected.copy()
+    for i in range(len(V_x_S_selected)):
+        V_x_S_cut[i] = V_x_S_selected[i][0:minVectorLen]
+        
+    t = t[0:minVectorLen] 
+    
     arbitraryStartTime_ms = []
     dt = 0.0001*1000 #timestep in Qualiys-data (s)*1000 to get in milliseconds (ms)
-    for i in range(len(max(V_x_S, key=len))):
-        arbitraryStartTime_ms.append(dt*i) 
+    t_index_correction_from_figure = 5 #looked at figure and picked an index value s.t. t=0 looks good w.r.t. calculated dx/dt
+    for i in range(len(max(V_x_S_cut, key=len))):
+        arbitraryStartTime_ms.append(dt*(i-numIndexesBeforeMinSpeed+t_index_correction_from_figure)) 
 
-    V_x_header = get_custom_header_from_S_files(filenames_S, ' dx/dt (mm/s)')
-    V_x_dataFrame = pd.DataFrame(V_x_S, V_x_header).transpose()
+    V_x_average = np.average(V_x_S_cut, axis=0)
+    V_x_header = get_custom_header_from_S_files(filenames_S, ' dx/dt (m/s)')
+    V_x_header.pop(1) #remove S15 header
+    V_x_dataFrame = pd.DataFrame(V_x_S_cut, V_x_header).transpose()
+    V_x_dataFrame.insert(loc=0, column='Average dx/dt (m/s)', value=V_x_average)
     V_x_dataFrame.insert(loc=0, column='Arbitrary start time (ms)', value=arbitraryStartTime_ms)
     write_dataFrame_to_CSV(V_x_dataFrame, processedFilePath)
     
     
-    #write to CSV with "_Xvel_sigma5" ending
-    # plot all in PlotData, see if it looks good
-    # calculate average and plot that in PlotData also, to see if everything looks good
-    # export figures to appendix and result
-
-
-
-
-
-
-
-
-
     quit()
     
 
 
 
+seeOldCode = False
+if seeOldCode:
 
-filename_rawCSV = 'IckeOptimeradeTriggers_300V_20220422_1150' #needs to be filled in manually
-readFilePath_rawCSV = "RAW CSV/"+str(filename_rawCSV) + ".csv"
+    filename_rawCSV = 'IckeOptimeradeTriggers_300V_20220422_1150' #needs to be filled in manually
+    readFilePath_rawCSV = "RAW CSV/"+str(filename_rawCSV) + ".csv"
 
-filename_processedCSV = filename_rawCSV + "_processed_20220424_1122" #needs to be filled in manually
-writeFilePath_processedCSV = "Gaussed and derivative CSV/"+str(filename_processedCSV) + ".csv"
+    filename_processedCSV = filename_rawCSV + "_processed_20220424_1122" #needs to be filled in manually
+    writeFilePath_processedCSV = "Gaussed and derivative CSV/"+str(filename_processedCSV) + ".csv"
 
-rawData = read_CSV(readFilePath_rawCSV)
-header = get_CSV_header(rawData)
+    rawData = read_CSV(readFilePath_rawCSV)
+    header = get_CSV_header(rawData)
 
-frame = rawData[header[0]]
-time  = rawData[header[1]]
-rawX  = rawData[header[2]]
-rawY  = rawData[header[3]]
-rawZ  = rawData[header[4]]
+    frame = rawData[header[0]]
+    time  = rawData[header[1]]
+    rawX  = rawData[header[2]]
+    rawY  = rawData[header[3]]
+    rawZ  = rawData[header[4]]
 
-showMultipleSigma = False #set to true if you want plot for several values for sigma in gauss filter
+    showMultipleSigma = False #set to true if you want plot for several values for sigma in gauss filter
 
-[rawX_noZeroes, time_noZeroes, frame_noZeroes] = remove_zeroValues(rawX, time, frame)
-[rawY_noZeroes, _, _] = remove_zeroValues(rawY, time, frame)
-[rawZ_noZeroes, _, _] = remove_zeroValues(rawZ, time, frame)
+    [rawX_noZeroes, time_noZeroes, frame_noZeroes] = remove_zeroValues(rawX, time, frame)
+    [rawY_noZeroes, _, _] = remove_zeroValues(rawY, time, frame)
+    [rawZ_noZeroes, _, _] = remove_zeroValues(rawZ, time, frame)
 
-sigma = 5 #3-4 looks pretty good; 5-6 looks very smooth and nice, //2022-04-23
-x_filtered = gaussianFilter1D(rawX_noZeroes, sigma)
-y_filtered = gaussianFilter1D(rawY_noZeroes, sigma)
-z_filtered = gaussianFilter1D(rawZ_noZeroes, sigma)
+    sigma = 5 #3-4 looks pretty good; 5-6 looks very smooth and nice, //2022-04-23
+    x_filtered = gaussianFilter1D(rawX_noZeroes, sigma)
+    y_filtered = gaussianFilter1D(rawY_noZeroes, sigma)
+    z_filtered = gaussianFilter1D(rawZ_noZeroes, sigma)
 
-frame, t = frame_noZeroes, time_noZeroes
-x, y, z = x_filtered, y_filtered, z_filtered
-v_x, v_y, v_z = np.gradient(x)/np.gradient(t), np.gradient(y)/np.gradient(t), np.gradient(z)/np.gradient(t)
-v_x_nofilter, v_y_nofilter, v_z_nofilter = np.gradient(rawX_noZeroes)/np.gradient(t), np.gradient(rawY_noZeroes)/np.gradient(t), np.gradient(rawZ_noZeroes)/np.gradient(t)
+    frame, t = frame_noZeroes, time_noZeroes
+    x, y, z = x_filtered, y_filtered, z_filtered
+    v_x, v_y, v_z = np.gradient(x)/np.gradient(t), np.gradient(y)/np.gradient(t), np.gradient(z)/np.gradient(t)
+    v_x_nofilter, v_y_nofilter, v_z_nofilter = np.gradient(rawX_noZeroes)/np.gradient(t), np.gradient(rawY_noZeroes)/np.gradient(t), np.gradient(rawZ_noZeroes)/np.gradient(t)
 
-plt.plot(t, v_x_nofilter, '-', label="Velocity_x (mm/s), unfiltered")
-#plt.plot(t, v_y_nofilter, ':', label="Velocity_y (mm/s), unfiltered")
-#plt.plot(t, v_z_nofilter, '.-', label="Velocity_z (mm/s), unfiltered")
+    plt.plot(t, v_x_nofilter, '-', label="Velocity_x (mm/s), unfiltered")
+    #plt.plot(t, v_y_nofilter, ':', label="Velocity_y (mm/s), unfiltered")
+    #plt.plot(t, v_z_nofilter, '.-', label="Velocity_z (mm/s), unfiltered")
 
-if showMultipleSigma:
-    x_filteredArray=[]
-    for i in range(2,5,1):
-        sigma_loop = i+1
-        x_filteredArray=gaussianFilter1D(rawX_noZeroes, sigma_loop)
-        print(x_filteredArray)
-        v = np.gradient(x_filteredArray)/np.gradient(t)
-        plt.plot(t, v, label="Velocity_x (mm/s), filtered sigma="+str(sigma_loop))
+    if showMultipleSigma:
+        x_filteredArray=[]
+        for i in range(2,5,1):
+            sigma_loop = i+1
+            x_filteredArray=gaussianFilter1D(rawX_noZeroes, sigma_loop)
+            print(x_filteredArray)
+            v = np.gradient(x_filteredArray)/np.gradient(t)
+            plt.plot(t, v, label="Velocity_x (mm/s), filtered sigma="+str(sigma_loop))
 
-plt.plot(t, v_x, label="Velocity_x (mm/s), filtered sigma="+str(sigma))
-plt.plot(t, v_y, label="Velocity_y (mm/s), filtered sigma="+str(sigma))
-plt.plot(t, v_z, label="Velocity_z (mm/s), filtered sigma="+str(sigma))
-plt.legend()
-#plt.show()
+    plt.plot(t, v_x, label="Velocity_x (mm/s), filtered sigma="+str(sigma))
+    plt.plot(t, v_y, label="Velocity_y (mm/s), filtered sigma="+str(sigma))
+    plt.plot(t, v_z, label="Velocity_z (mm/s), filtered sigma="+str(sigma))
+    plt.legend()
+    #plt.show()
 
-#time_startAtTequals0 = time - time
-time_milliSecond = time*1000
-v_x_meterPerSecond, v_y_meterPerSecond, v_z_meterPerSecond = -v_x/1000, -v_y/1000, -v_z/1000
-v_x, v_y, v_z = v_x_meterPerSecond, v_y_meterPerSecond, v_z_meterPerSecond
-header = ['Frame (processed)', ' Time (ms)', ' Calculated velocity X (m/s)', ' Calculated velocity Y (m/s)', ' Calculated velocity Z (m/s)']
-processedCSV_rows = merge_vectors_for_writeCSV(frame, t, v_x, v_y, v_z)
-write_data_to_CSV(writeFilePath_processedCSV, header, processedCSV_rows)
+    #time_startAtTequals0 = time - time
+    time_milliSecond = time*1000
+    v_x_meterPerSecond, v_y_meterPerSecond, v_z_meterPerSecond = -v_x/1000, -v_y/1000, -v_z/1000
+    v_x, v_y, v_z = v_x_meterPerSecond, v_y_meterPerSecond, v_z_meterPerSecond
+    header = ['Frame (processed)', ' Time (ms)', ' Calculated velocity X (m/s)', ' Calculated velocity Y (m/s)', ' Calculated velocity Z (m/s)']
+    processedCSV_rows = merge_vectors_for_writeCSV(frame, t, v_x, v_y, v_z)
+    write_data_to_CSV(writeFilePath_processedCSV, header, processedCSV_rows)
+
+    quit()
 
 
 #EOF
