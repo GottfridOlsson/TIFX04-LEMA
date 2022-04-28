@@ -17,6 +17,7 @@ from unittest import result
 import pandas as pd                     # for CSV
 import numpy as np
 import matplotlib.pyplot as plt
+from pyparsing import col
 from scipy.ndimage import gaussian_filter1d
 
 
@@ -95,8 +96,8 @@ filenames_S  = ['S13_20220426_1524.csv', 'S14_20220426_1526.csv', 'S15_20220426_
 filenames_DX = ['DX_32mm_20220426.csv',  'DX_33mm_20220426.csv',  'DX_34mm_20220426.csv',  'DX_35mm_20220426.csv',  'DX_36mm_20220426.csv',  'DX_37mm_20220426.csv',  'DX_38mm_20220426.csv',  'DX_39mm_20220426.csv',  'DX_40mm_20220426.csv',  'DX_41mm_20220426.csv',  'DX_42mm_20220426.csv',  'DX_43mm_20220426.csv',  'DX_44mm_20220426.csv']
 filePaths_S  = get_filePaths_ofFilenames_inFolder(formatted_CSV_folder_path, filenames_S)
 filePaths_DX = get_filePaths_ofFilenames_inFolder(formatted_CSV_folder_path, filenames_DX)
-filePath_S13_through_S23_time_Xpos = formatted_CSV_folder_path + backSlash + "S13_through_S23_time_Xpos_20220427.csv"
-
+filePath_S13_through_S23_time_Xpos           = formatted_CSV_folder_path + backSlash + "S_time_Xpos_20220428.csv"
+filePath_processed_S13_through_S23_time_Xvel = formatted_CSV_folder_path + backSlash + "S_time_Xvel_20220428_sigma5.csv"
 
 
 def get_columnData_from_CSV(filePath, column):
@@ -115,18 +116,18 @@ def get_columnData_from_CSV_files(filePaths, column):
         columnData.append(get_columnData_from_CSV(filePaths[i], column))
     return columnData
 
-def get_Xpos_header_from_S_files(filenames):
+def get_custom_header_from_S_files(filenames, endHeaderString):
     S_numbers = []
     S_header= []
     for i in range(len(filenames)):
         S_numbers.append( get_part_of_string(filenames[i], 1, 3) )#gives start  to set as header for new CSV-file, e.g. "S13" or "S20"
-        S_header.append( S_numbers[i] + " X-position (mm)")
+        S_header.append( S_numbers[i] + endHeaderString)
     return S_header
 
 def create_dataFrame_S_time_and_Xpos_data(filePaths, filenames):
     XposData  = get_columnData_from_CSV_files(filePaths, 2)
     timeData  = get_columnData_from_CSV(filePaths[0], 1)
-    header    = get_Xpos_header_from_S_files(filenames)
+    header    = get_custom_header_from_S_files(filenames, " X-position (mm)")
     dataFrame = pd.DataFrame(XposData, header).transpose()
     dataFrame.insert(loc=0, column='Time (s)', value=timeData)
     return dataFrame
@@ -141,26 +142,28 @@ def write_dataFrame_to_CSV(dataFrame, filePath_CSV):
 
 ## MAIN ##
 
-S13_through_S23_analysis = True
+S_analysis = True #measurements S13-S23 taken 20220426
+plot_Sdata = False #plot "gaussed and derivative and noZeroed"-data
 
 
-
-if S13_through_S23_analysis:
+if S_analysis:
     filePath = filePath_S13_through_S23_time_Xpos
+    processedFilePath = filePath_processed_S13_through_S23_time_Xvel
     dataFrame_S = create_dataFrame_S_time_and_Xpos_data(filePaths_S, filenames_S)
     write_dataFrame_to_CSV(dataFrame_S, filePath)
 
     data = read_CSV(filePath) #data is: 0 = time, 1 = Xpos S13, 2 = Xpos S14, 3 = Xpos S15, ...
     header = get_CSV_header(data)
-    Xpos_range = range(1,12) #which Xpos_S columns to keep in analysis #removed 3 since that data looked wrong, lablogg said so too //2022-04-27
+    Xpos_range = range(1,12) #which Xpos_S columns to keep in analysis
     column_start = min(Xpos_range)
     time = data[header[0]]
 
     # apply gaussian for each column in Xpos_range before velcity calc
     sigma = 5 #arbitrarily chosen as 5
-    Xpos_S_gaussed = [None for x in Xpos_range]
     V_x_S  = [None for x in Xpos_range]
     time_S = [None for x in Xpos_range]
+    Xpos_S_gaussed = [None for x in Xpos_range]
+    V_x_header = [None for x in Xpos_range]
  
     for i in Xpos_range:
         # gauss filter per column (Xpos for each S-measurement)
@@ -186,23 +189,31 @@ if S13_through_S23_analysis:
         time_selected = time_selected[0:len(time_selected)-removeNumLastDataPoints]
 
         
-        # plot to see how it looks
+        # plot to make sure it looks good
         t = time_selected
         time_S[i-column_start] = t
         V_x = V_x_S_i_selected
         V_x_S[i-column_start] = V_x
+        
         if i != 3: #remove S15 which had bad data from Qualisys
             plt.plot(t, V_x, label=str(header[i])+" (calc dx/dt, sigma="+str(sigma)+")")
         
+        
+    if plot_Sdata:
+        plt.legend()
+        plt.show()
 
-    plt.legend()
-    plt.show()
-    print(V_x_S)
+    arbitraryStartTime_ms = []
+    dt = 0.0001*1000 #timestep in Qualiys-data (s)*1000 to get in milliseconds (ms)
+    for i in range(len(max(V_x_S, key=len))):
+        arbitraryStartTime_ms.append(dt*i) 
 
-    # YOU ARE HERE//2022-04-27, 17:32
-    ## TODO: ##
-    # take V_x_S (filtered sigma=5 above), put in one CSV-file with new time-assignment s.t. every V_x_S starts at time t=0 and ticks up in \Deltat=0.0001 s
-
+    V_x_header = get_custom_header_from_S_files(filenames_S, ' dx/dt (mm/s)')
+    V_x_dataFrame = pd.DataFrame(V_x_S, V_x_header).transpose()
+    V_x_dataFrame.insert(loc=0, column='Arbitrary start time (ms)', value=arbitraryStartTime_ms)
+    write_dataFrame_to_CSV(V_x_dataFrame, processedFilePath)
+    
+    
     #write to CSV with "_Xvel_sigma5" ending
     # plot all in PlotData, see if it looks good
     # calculate average and plot that in PlotData also, to see if everything looks good
