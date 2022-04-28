@@ -2,7 +2,7 @@
 #        Name: TIFX04-22-82, DataProcessing LEMA
 #      Author: GOTTFRID OLSSON 
 #     Created: 2022-04-22, 13:55
-#     Updated: 2022-04-28, 11:40
+#     Updated: 2022-04-28, 17:25
 #       About: Takes in CSV-data från Qualisys measurement
 #              and applies gaussian filter and excecutes a
 #              numerical derivative to get velocity
@@ -84,19 +84,22 @@ processed_CSV_folder_path = currentPath + backSlash + "Processed CSV"
 filenames_S  = ['S13_20220426_1524.csv', 'S14_20220426_1526.csv', 'S15_20220426_1529.csv', 'S16_20220426_1534.csv', 'S17_20220426_1539.csv', 'S18_20220426_1547.csv', 'S19_20220426_1550.csv', 'S20_20220426_1552.csv', 'S21_20220426_1605.csv', 'S22_20220426_1609.csv', 'S23_20220426_1612.csv']
 filenames_DX = ['DX_32mm_20220426.csv',  'DX_33mm_20220426.csv',  'DX_34mm_20220426.csv',  'DX_35mm_20220426.csv',  'DX_36mm_20220426.csv',  'DX_37mm_20220426.csv',  'DX_38mm_20220426.csv',  'DX_39mm_20220426.csv',  'DX_40mm_20220426.csv',  'DX_41mm_20220426.csv',  'DX_42mm_20220426.csv',  'DX_43mm_20220426.csv',  'DX_44mm_20220426.csv']
 filenames_I  = ['I_Steg1_20220426.csv', 'I_Steg2_20220426.csv', 'I_Steg3_20220426.csv', 'I_Steg4_20220426.csv', 'I_Steg5_20220426.csv']
-filenames_I_allCoils = ['I_allCoils_20220426.csv']
+filename_I_allCoils = ['I_allCoils_20220426.csv']
 filePaths_S  = get_filePaths_ofFilenames_inFolder(formatted_CSV_folder_path, filenames_S)
 filePaths_DX = get_filePaths_ofFilenames_inFolder(formatted_CSV_folder_path, filenames_DX)
 filePaths_I  = get_filePaths_ofFilenames_inFolder(raw_CSV_folder_path,       filenames_I)
+filePath_I_allCoils_raw = raw_CSV_folder_path + backSlash + "I_allCoils_20220426.csv"
 filePath_S13_through_S23_time_Xpos           = formatted_CSV_folder_path + backSlash + "S_time_Xpos_20220428.csv"
 filePath_processed_S13_through_S23_time_Xvel = processed_CSV_folder_path + backSlash + "S_time_Xvel_20220428_sigma5.csv"
 
 filePath_simulated_S_data_CSV           = formatted_CSV_folder_path + backSlash + "Simulated_S_data_20220428.csv" 
 filePath_processed_and_simulated_S_data = processed_CSV_folder_path + backSlash + "Processed_and_simulated_S_Xvel_sigma5_20220428.csv"
 
-filePath_I_all_individual_coils = raw_CSV_folder_path + backSlash + "I_Steg12345_20220428.csv"
+filePath_I_all_individual_coils           = processed_CSV_folder_path + backSlash + "I_Steg12345_20220428.csv"
+filePath_I_all_individual_coils_processed = processed_CSV_folder_path + backSlash + "I_Steg12345_20220428_correctedCurrent.csv"
+filePath_I_allCoils = processed_CSV_folder_path + backSlash + "I_allCoils_20220428_nonCorrected.csv"
 
-
+filePath_processedSimulatedSdata_IallCoils = processed_CSV_folder_path + backSlash + "processedSimulatedSdata_and_IallCoils_nonCorrected_20220428.csv"
 
 def get_columnData_from_CSV(filePath, column):
     CSV = read_CSV(filePath)
@@ -135,6 +138,21 @@ def write_dataFrame_to_CSV(dataFrame, filePath_CSV):
     print("DONE: Write dataFrame to CSV: " + str(filePath_CSV))
 
 
+def add_one_column_from_CSV_to_CSV(column, from_CSV_path, CSV_path, new_CSV_path):
+    from_CSV = read_CSV(from_CSV_path)
+    from_header = get_CSV_header(from_CSV)
+
+    CSV = read_CSV(CSV_path)
+    header = get_CSV_header(CSV)
+
+    columnHeader = from_header[column]
+    columnData = from_CSV[columnHeader]
+    CSV.insert(loc=len(header), column=columnHeader, value=columnData)
+
+    CSV.to_csv(new_CSV_path, CSV_DELIMITER, index=False)
+    print("DONE: Add one column from " + str(from_CSV_path) + " \n      to " + str(new_CSV_path))
+
+
 def add_all_columns_from_CSV_to_CSV(from_CSV_path, CSV_path, new_CSV_path):
     from_CSV = read_CSV(from_CSV_path)
     from_header = get_CSV_header(from_CSV)
@@ -157,11 +175,12 @@ def add_all_columns_from_CSV_to_CSV(from_CSV_path, CSV_path, new_CSV_path):
 
 ## MAIN ##
 
-S_analysis = True #measurements S13-S23 taken 20220426
+S_analysis = False #measurements S13-S23 taken 20220426
 plot_Sdata = False #plot "gaussed and derivative and noZeroed"-data
-add_simulatedData_to_S = True
+add_simulatedData_to_S = False
 
-I_coils_analysis = False
+I_coils_analysis = True
+combineIallCoils_and_Smeasurement= True
 DX_analysis = False
 
 
@@ -266,12 +285,56 @@ if S_analysis:
 
 if I_coils_analysis:
     print("ANALYSIS: current through coils")
-    for i in range(len(filePaths_I)):
-        add_all_columns_from_CSV_to_CSV(filePaths_I[i], filePaths_I[0], filePath_I_all_individual_coils)
+    for i in range(1,len(filePaths_I)): #skip first file since we use first file for current through coilpar 1
+        if i == 1:
+            add_one_column_from_CSV_to_CSV(1, filePaths_I[i], filePaths_I[0], filePath_I_all_individual_coils)
+        else:
+            add_one_column_from_CSV_to_CSV(1, filePaths_I[i], filePath_I_all_individual_coils, filePath_I_all_individual_coils)
+    
+    I_data = read_CSV(filePath_I_all_individual_coils)
+    header = get_CSV_header(I_data)
+
+    t = I_data[header[0]]*1000 #s --> ms
+    I_coil_measured = []
+    for i in range(1,len(header)):
+        I_coil_measured.append(I_data[header[i]])
+        plt.plot(t, I_coil_measured[i-1], label="non-corrected current coilpar "+str(i))
+
+    plt.legend()
+    #plt.show()
+
+    # correction of measured current vs. actual current through coilpair (we used current divider as to not cap the oscilloscope)
+    K_factor = [3,3,4,4,4] #measured K_i = I_actualCurrent / I_measuredCurrent  for caoilpair i
+
+    I_coil_corrected = []
+    for i in range(len(I_coil_measured)):
+        I_coil_corrected.append(I_coil_measured[i]*K_factor[i])
+    
+    #write to new CSV
+    header_corrected = []
+    for i in range(1,len(header)):
+        header_corrected.append("Measured current through coilpair "+str(i) + " scaled by factor K_" + str(i)+" = " + str(K_factor[i-1]) + " (A)")
+
+    dataFrame = pd.DataFrame(I_coil_corrected, header_corrected).transpose()
+    dataFrame.insert(loc=0, column="Oscilloscope time (ms)", value=t)
+    write_dataFrame_to_CSV(dataFrame, filePath_I_all_individual_coils_processed)
 
 
 
+    # I_allCoils_20220426
+    I_all = read_CSV(filePath_I_allCoils_raw)
+    header_I_all = get_CSV_header(I_all)
 
+    t_offset = 1.35 #ms, by looking at graph
+    I_all[header_I_all[0]] *= 1000 #s --> ms
+    I_all[header_I_all[0]] += t_offset #to get first coil to trigger att t = 0
+
+    I_all = I_all.rename(columns={header_I_all[0]: "Oscilloscope time (ms)"})
+    write_dataFrame_to_CSV(I_all, filePath_I_allCoils)
+
+
+    if combineIallCoils_and_Smeasurement:
+        add_all_columns_from_CSV_to_CSV(filePath_I_allCoils, filePath_processed_and_simulated_S_data, filePath_processedSimulatedSdata_IallCoils)
 
     quit()
 
