@@ -12,7 +12,5 @@ Data processing:
 -Write to CSV with a few tweaks to the data
 
 
-
-notes:
-need to fill in 
-'filename_rawCSV' and 'filename_processedCSV' manually for now //2022-04-24
+NOTE TO SELF:
+TODO: write how to use the program, in what order, what everything is and so on!
