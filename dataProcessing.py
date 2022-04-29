@@ -343,7 +343,9 @@ if I_coils_analysis:
 
     I_all[header_I_all[0]] = t
     K_all = 6 #K_i \approx 6 forall i, this is a test!
+    I_zero_offset = 2 #from figure, what is the zero level raised to after we multi *= K_all 
     I_all[header_I_all[1]] *= K_all 
+    I_all[header_I_all[1]] -= I_zero_offset
     I_all = I_all.rename(columns={header_I_all[0]: "Oscilloscope time (ms)", header_I_all[1]: "Measured current through all coilpairs (A) scaled by factor " + str(K_all)})
     write_dataFrame_to_CSV(I_all, filePath_I_allCoils)
 
