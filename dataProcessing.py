@@ -83,7 +83,7 @@ processed_CSV_folder_path = currentPath + backSlash + "Processed CSV"
 # S for 'final measurements of speed (10m/s)' and DX for 'Diode x-position'
 filenames_S  = ['S13_20220426_1524.csv', 'S14_20220426_1526.csv', 'S15_20220426_1529.csv', 'S16_20220426_1534.csv', 'S17_20220426_1539.csv', 'S18_20220426_1547.csv', 'S19_20220426_1550.csv', 'S20_20220426_1552.csv', 'S21_20220426_1605.csv', 'S22_20220426_1609.csv', 'S23_20220426_1612.csv']
 filenames_DX = ['DX_32mm_20220426.csv',  'DX_33mm_20220426.csv',  'DX_34mm_20220426.csv',  'DX_35mm_20220426.csv',  'DX_36mm_20220426.csv',  'DX_37mm_20220426.csv',  'DX_38mm_20220426.csv',  'DX_39mm_20220426.csv',  'DX_40mm_20220426.csv',  'DX_41mm_20220426.csv',  'DX_42mm_20220426.csv',  'DX_43mm_20220426.csv',  'DX_44mm_20220426.csv']
-filenames_I  = ['I_Steg1_20220426.csv', 'I_Steg2_20220426.csv', 'I_Steg3_20220426.csv', 'I_Steg4_20220426.csv', 'I_Steg5_20220426.csv']
+filenames_I  = ['I_Steg1_20220429_SD2.csv', 'I_Steg2_20220429_SD2.csv', 'I_Steg3_20220426.csv', 'I_Steg4_20220426.csv', 'I_Steg5_20220426.csv']
 filename_I_allCoils = ['I_allCoils_20220426.csv']
 filePaths_S  = get_filePaths_ofFilenames_inFolder(formatted_CSV_folder_path, filenames_S)
 filePaths_DX = get_filePaths_ofFilenames_inFolder(formatted_CSV_folder_path, filenames_DX)
@@ -99,7 +99,7 @@ filePath_I_all_individual_coils           = processed_CSV_folder_path + backSlas
 filePath_I_all_individual_coils_processed = processed_CSV_folder_path + backSlash + "I_Steg12345_20220428_correctedCurrent.csv"
 filePath_I_allCoils = processed_CSV_folder_path + backSlash + "I_allCoils_20220428_nonCorrected.csv"
 
-filePath_processedSimulatedSdata_IallCoils = processed_CSV_folder_path + backSlash + "processedSimulatedSdata_and_IallCoils_nonCorrected_20220428.csv"
+filePath_processedSimulatedSdata_IallCoils = processed_CSV_folder_path + backSlash + "processedSimulatedSdata_and_IallCoils_sameKfactor_20220429.csv"
 
 def get_columnData_from_CSV(filePath, column):
     CSV = read_CSV(filePath)
@@ -304,7 +304,7 @@ if I_coils_analysis:
     #plt.show()
 
     # correction of measured current vs. actual current through coilpair (we used current divider as to not cap the oscilloscope)
-    K_factor = [3,3,4,4,4] #measured K_i = I_actualCurrent / I_measuredCurrent  for caoilpair i
+    K_factor = [3,3,4,4,4] #measured K_i = I_actualCurrent / I_measuredCurrent  for coilpair i
 
     I_coil_corrected = []
     for i in range(len(I_coil_measured)):
@@ -326,10 +326,25 @@ if I_coils_analysis:
     header_I_all = get_CSV_header(I_all)
 
     t_offset = 1.35 #ms, by looking at graph
-    I_all[header_I_all[0]] *= 1000 #s --> ms
-    I_all[header_I_all[0]] += t_offset #to get first coil to trigger att t = 0
+    t = I_all[header_I_all[0]]
+    t *= 1000 #s --> ms
+    t += t_offset #to get first coil to trigger att t = 0
 
-    I_all = I_all.rename(columns={header_I_all[0]: "Oscilloscope time (ms)"})
+    #t_startStage = []
+    #t_endStage = []
+    #I_stage = []
+    #for i in range(5):
+    #    I_stage.append(I_all[header_I_all[1]][])
+
+    ### split I_all into each stage (1,2,3,4,5) and correct by factor K_i according to lablogg
+    #plt.plot(t, I_stage[i])
+
+    # filePath_processedSimulatedSdata_IallCoils
+
+    I_all[header_I_all[0]] = t
+    K_all = 6 #K_i \approx 6 forall i, this is a test!
+    I_all[header_I_all[1]] *= K_all 
+    I_all = I_all.rename(columns={header_I_all[0]: "Oscilloscope time (ms)", header_I_all[1]: "Measured current through all coilpairs (A) scaled by factor " + str(K_all)})
     write_dataFrame_to_CSV(I_all, filePath_I_allCoils)
 
 
