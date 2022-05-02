@@ -34,6 +34,9 @@ def printTableDataLineAllCoils(parameterString, values, uncertainties_pm): #ad h
 #    result = 1
 #    return(result)
 
+def printTableDataLineAllCoilsTranposed():
+
+    return False
 
 ## VECTORS WITH DATA FROM LABLOGG ##
 # coils are paired: XSPi with i = {1,2,3,4,5}
@@ -66,11 +69,25 @@ L_pm   = [ [0.005, 0.005],      [0.005, 0.005], [0.005, 0.005], [0.0005, 0.0005]
 
 parameterStrings = ["$r$ (\si{\milli\meter})", "$R$ (\si{\milli\meter})", "$d=t$ (\si{\milli\meter})", "$s_{\mathrm{wire}}$ (\si{\meter})", "$L$ (\si{\milli\henry})", "$L_{\mathrm{coupled}}$ (XSP$i$) (\si{\milli\henry})", "$\Omega$ ($\Omega$)", "$m$ (\si{\gram})"] #for table in Latex
 
-printTableDataLineAllCoils(parameterStrings[0], r, r_pm)
-printTableDataLineAllCoils(parameterStrings[1], R, R_pm)
-printTableDataLineAllCoils(parameterStrings[2], t, t_pm)
-printTableDataLineAllCoils(parameterStrings[3], L_wireInCoil, L_wireInCoil_pm)
-printTableDataLineAllCoils(parameterStrings[4], L, L_pm)
+printTableDataLineAllCoils = False
+printTableDataLineAllCoilsTransposed = True
 
-printTableDataLineAllCoils(parameterStrings[6], Ohm, Ohm_pm)
-printTableDataLineAllCoils(parameterStrings[7], m, m_pm)
+if printTableDataLineAllCoils:
+    printTableDataLineAllCoils(parameterStrings[0], r, r_pm)
+    printTableDataLineAllCoils(parameterStrings[1], R, R_pm)
+    printTableDataLineAllCoils(parameterStrings[2], t, t_pm)
+    printTableDataLineAllCoils(parameterStrings[3], L_wireInCoil, L_wireInCoil_pm)
+    printTableDataLineAllCoils(parameterStrings[4], L, L_pm)
+
+    printTableDataLineAllCoils(parameterStrings[6], Ohm, Ohm_pm)
+    printTableDataLineAllCoils(parameterStrings[7], m, m_pm)
+
+
+
+if printTableDataLineAllCoilsTransposed:
+    matrixTransposed = [r, r_pm, R, R_pm, t, t_pm, L_wireInCoil, L_wireInCoil_pm, L, L_pm, Ohm, Ohm_pm, m, m_pm]
+    for i in range(len(matrixTransposed)):
+        print(matrixTransposed[i][0])
+    
+    #TODO: print each row (column) instead of column (row) : matrix is transposed w.r.t. what is in Resultat right now!
+    # //2022-05-02, 18:56
