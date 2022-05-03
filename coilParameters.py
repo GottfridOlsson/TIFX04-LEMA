@@ -2,7 +2,7 @@
 #        Name: TIFX04-22-82, parameters for used coils
 #      Author: GOTTFRID OLSSON 
 #     Created: 2022-04-25, 20:03
-#     Updated: 2022-04-25, 21:14
+#     Updated: 2022-05-03, 11:18
 #       About: Stores and formates data for each coil used
 #              in the final design (XSP1, XSP2, ..., XSP5)
 #              Prints code for table --> LaTeX
@@ -69,10 +69,10 @@ L_pm   = [ [0.005, 0.005],      [0.005, 0.005], [0.005, 0.005], [0.0005, 0.0005]
 
 parameterStrings = ["$r$ (\si{\milli\meter})", "$R$ (\si{\milli\meter})", "$d=t$ (\si{\milli\meter})", "$s_{\mathrm{wire}}$ (\si{\meter})", "$L$ (\si{\milli\henry})", "$L_{\mathrm{coupled}}$ (XSP$i$) (\si{\milli\henry})", "$\Omega$ ($\Omega$)", "$m$ (\si{\gram})"] #for table in Latex
 
-printTableDataLineAllCoils = False
-printTableDataLineAllCoilsTransposed = True
+printTableDataLineAllCoils_bool = False
+printTableDataLineAllCoilsTransposed_bool = True
 
-if printTableDataLineAllCoils:
+if printTableDataLineAllCoils_bool:
     printTableDataLineAllCoils(parameterStrings[0], r, r_pm)
     printTableDataLineAllCoils(parameterStrings[1], R, R_pm)
     printTableDataLineAllCoils(parameterStrings[2], t, t_pm)
@@ -84,10 +84,11 @@ if printTableDataLineAllCoils:
 
 
 
-if printTableDataLineAllCoilsTransposed:
+if printTableDataLineAllCoilsTransposed_bool:
     matrixTransposed = [r, r_pm, R, R_pm, t, t_pm, L_wireInCoil, L_wireInCoil_pm, L, L_pm, Ohm, Ohm_pm, m, m_pm]
     for i in range(len(matrixTransposed)):
-        print(matrixTransposed[i][0])
+        printTableDataLineAllCoils(parameterStrings[i], matrixTransposed[i][0], matrixTransposed[i][1]) #smth smth
+        #print(matrixTransposed[i][0])
     
     #TODO: print each row (column) instead of column (row) : matrix is transposed w.r.t. what is in Resultat right now!
     # //2022-05-02, 18:56

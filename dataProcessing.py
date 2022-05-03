@@ -2,11 +2,12 @@
 #        Name: TIFX04-22-82, DataProcessing LEMA
 #      Author: GOTTFRID OLSSON 
 #     Created: 2022-04-22, 13:55
-#     Updated: 2022-04-28, 17:25
+#     Updated: 2022-05-03, 11:17
 #       About: Takes in CSV-data från Qualisys measurement
 #              and applies gaussian filter and excecutes a
 #              numerical derivative to get velocity
-#              Saves processed data to another CSV-file
+#              Saves processed data to another CSV-file.
+#              Process: S-measurements, I_coils, eta.
 ##---------------------------------------------------------##
 
 
@@ -47,11 +48,11 @@ def remove_zeroValues(position, time):#, *frame): #frame removed, 2022-04-27
     position_noZeroes = []
     time_noZeroes = []
     #frame_noZeroes = []
-
-    for i in range(len(position)):
-        if position[i] != 0.000:
-            position_noZeroes.append(position[i])
-            time_noZeroes.append(time[i])
+    #print("remove_zeroValues: len(time): " + str(len(time)))
+    for k in range(len(position)):
+        if position[k] != 0:
+            position_noZeroes.append(position[k])
+            time_noZeroes.append(time[k])
             #frame_noZeroes.append(frame[i])
     
     #print("DONE: Removed values with '0.000' from position and time vectors")
@@ -101,6 +102,9 @@ filePath_I_allCoils = processed_CSV_folder_path + backSlash + "I_allCoils_202204
 
 filePath_processedSimulatedSdata_IallCoils = processed_CSV_folder_path + backSlash + "processedSimulatedSdata_and_IallCoils_sameKfactor_20220429.csv"
 
+filePath_DX_all = formatted_CSV_folder_path + backSlash + "DX_allPos_202205030.csv"
+
+
 def get_columnData_from_CSV(filePath, column):
     CSV = read_CSV(filePath)
     header = get_CSV_header(CSV)
@@ -121,14 +125,30 @@ def get_custom_header_from_S_files(filenames, endHeaderString):
     S_numbers = []
     S_header= []
     for i in range(len(filenames)):
-        S_numbers.append( get_part_of_string(filenames[i], 1, 3) )#gives start  to set as header for new CSV-file, e.g. "S13" or "S20"
+        S_numbers.append( get_part_of_string(filenames[i], 1, 3) )#gives start to set as header for new CSV-file, e.g. "S13" or "S20"
         S_header.append( S_numbers[i] + endHeaderString)
     return S_header
+
+def get_custom_header_from_DX_files(filenames, endHeaderString):
+    DX_numbers = []
+    DX_header  =[]
+    for i in range(len(filenames)):
+        DX_numbers.append( "DX_"+get_part_of_string(filenames[i], 4, 7) )#gives start to set as header for new CSV-file, e.g. "38mm" or "S20"
+        DX_header.append( DX_numbers[i] + endHeaderString)
+    return DX_header
 
 def create_dataFrame_S_time_and_Xpos_data(filePaths, filenames):
     XposData  = get_columnData_from_CSV_files(filePaths, 2) #2 for X-position
     timeData  = get_columnData_from_CSV(filePaths[0], 1)
     header    = get_custom_header_from_S_files(filenames, " X-position (mm)")
+    dataFrame = pd.DataFrame(XposData, header).transpose()
+    dataFrame.insert(loc=0, column='Time (s)', value=timeData)
+    return dataFrame
+
+def create_dataFrame_DX_time_and_Xpos_data(filePaths, filenames):
+    XposData  = get_columnData_from_CSV_files(filePaths, 2) #2 for X-position
+    timeData  = get_columnData_from_CSV(filePaths[0], 1)
+    header    = get_custom_header_from_DX_files(filenames, " X-position (mm)")
     dataFrame = pd.DataFrame(XposData, header).transpose()
     dataFrame.insert(loc=0, column='Time (s)', value=timeData)
     return dataFrame
@@ -179,10 +199,13 @@ S_analysis = False #measurements S13-S23 taken 20220426
 plot_Sdata = False #plot "gaussed and derivative and noZeroed"-data
 add_simulatedData_to_S = False
 
-I_coils_analysis = True
+I_coils_analysis = False
 combineIallCoils_and_Smeasurement= True
-DX_analysis = False
 
+DX_stage2_analysis = True
+plot_DXdata = True
+
+eta_Calc = False
 
 if S_analysis:
     print("ANALYSIS: S-measurements")
@@ -223,14 +246,8 @@ if S_analysis:
         numIndexesBeforeMinSpeed = 50 #in order to get data where dx/dt = 0 in figure
         indexes = range(firstFastIndex-numIndexesBeforeMinSpeed, len(V_x_S_i))
 
-        #indexes = V_x_S_i > minSpeed
-        #indexes_numbers = 
         V_x_S_i_selected = [V_x_S_i[x] for x in indexes]
         time_selected    = [time_noZeroes[x] for x in indexes]
-        #time_selected = []
-        #for j in range(len(time_noZeroes)): #ugly way of saying: "time_selected = time_noZeroes[indexes]", but since i get error otherwise I dont care if its ugly //2022-04-27
-        #    if indexes[j]:
-        #        time_selected.append(time_noZeroes[j])
 
         removeNumLastDataPoints = 20 #remove last 20 points, since numerical derivative gets funky there
         V_x_S_i_selected = V_x_S_i_selected[0:len(V_x_S_i_selected)-removeNumLastDataPoints]
@@ -279,7 +296,24 @@ if S_analysis:
         print("ANALYSIS: S-measurements: added simulated data to S-file")
         add_all_columns_from_CSV_to_CSV(filePath_simulated_S_data_CSV, processedFilePath, filePath_processed_and_simulated_S_data)
     
-    
+
+    # choose time for v_final and calculate standard deviation from all S-measurements at that time t_f
+    t_f = 94 #[ms], choosen from figure
+    tol = 0.001 #[ms]
+    indexes_tf = np.where(np.isclose(arbitraryStartTime_ms, t_f, tol))
+    indexes_tf = int(indexes_tf[0])
+    V_f = V_x_average[indexes_tf]
+
+    V_x_at_tf = []
+    for i in range(len(V_x_S_cut)):
+        V_x_at_tf.append( V_x_S_cut[i][indexes_tf] ) 
+        
+    sigma_f = np.std(V_x_at_tf)
+    sigma_f_weighterNumberOfAveragesSeries = sigma_f/np.sqrt(len(V_x_S_cut))
+    print("v_f: "+str(V_f) + " m/s \n sigma_f_weighted_N: "+str(sigma_f_weighterNumberOfAveragesSeries) + " m/s \n t_f: ("+str(t_f)+" \pm "+str(tol)+") ms\n")
+
+
+
     quit()
     
 
@@ -352,6 +386,111 @@ if I_coils_analysis:
 
     if combineIallCoils_and_Smeasurement:
         add_all_columns_from_CSV_to_CSV(filePath_I_allCoils, filePath_processed_and_simulated_S_data, filePath_processedSimulatedSdata_IallCoils)
+
+    quit()
+
+
+if DX_stage2_analysis:
+    print("ANALYSIS: DeltaV as function of sensor position stage 2")
+
+    # do same analysis as for S_analysis for DX-files up until we have speed as function of arbitrary time
+    filePaths = filePaths_DX
+    acc_filePath = filePath_DX_all
+
+    dataFrame_DX = create_dataFrame_DX_time_and_Xpos_data(filePaths_DX, filenames_DX)
+    write_dataFrame_to_CSV(dataFrame_DX, acc_filePath)
+
+    data = read_CSV(acc_filePath)
+    header = get_CSV_header(data)
+    time = data[header[0]]
+    #print("time:" + str(time))
+    Xpos = []
+    N_DX_measurements = 13 +1 #number of DX-meas plus 1 bcs. index
+    for i in range(1,N_DX_measurements):
+        Xpos.append(data[header[i]])
+        #print(Xpos[i-1])
+
+    # apply gaussian for each column in Xpos_range before velcity calc
+    sigma = 5 #arbitrarily chosen as 5
+    V_x   = [None for x in range(1,N_DX_measurements)]
+    t     = [None for x in V_x]
+    Xpos_gaussed = [None for x in V_x]
+    V_x_header = [None for x in V_x]
+ 
+    for i in range(1,N_DX_measurements):
+        # gauss filter per column (Xpos for each S-measurement)
+        Xpos_i = Xpos[i-1]
+        [Xpos_i_noZeroes, time_noZeroes] = remove_zeroValues(Xpos_i, time)
+        Xpos_gaussed[i-1] = gaussianFilter1D(Xpos_i_noZeroes, sigma)
+
+        # get velocity in x-axis by use of gradient (negative since Qualisys defines coordinate system different from us)
+        V_x[i-1] = -(np.gradient(Xpos_gaussed[i-1])/np.gradient(time_noZeroes))/1000 #div 1000 to mm/s --> m/s
+        
+        # remove values from velocity that are below a certain lower limit (+ som buffer rows(?)) to align S-measurements in time with each other
+        V_x_i = V_x[i-1]
+        minSpeed = 50/1000 # 80 mm/s = 80/1000 m/s
+        for k in range(len(V_x_i)):
+            firstFastIndex = 0
+            if V_x_i[k] > minSpeed:
+                firstFastIndex = k
+                break
+        print(firstFastIndex)
+        numIndexesBeforeMinSpeed = 50 #in order to get data where dx/dt = 0 in figure
+        indexes = range(firstFastIndex-numIndexesBeforeMinSpeed, len(V_x_i))
+
+        V_x_i_selected = [V_x_i[x] for x in indexes]
+        time_selected  = [time_noZeroes[x] for x in indexes]
+
+        removeNumLastDataPoints = 10 #remove last points, since numerical derivative gets funky there
+        V_x_i_selected = V_x_i_selected[0:len(V_x_i_selected)-removeNumLastDataPoints]
+        time_selected  = time_selected[0:len(time_selected)-removeNumLastDataPoints]
+     
+        # plot to make sure it looks good
+        V_x[i-1] = V_x_i_selected
+        t = time_selected #_noZeroes
+        
+        plt.plot(t, V_x[i-1], label=str(header[i])+" (DX calc. dx/dt, sigma="+str(sigma)+")")
+        
+    if plot_DXdata:
+        plt.legend()
+        plt.show()
+
+
+    # YOU ARE HERE: TODO: arbitrary time and plot all again!  //2022-05-03
+    ######################################
+
+    arbitraryStartTime_ms = []
+    dt = 0.0001 #timestep in Qualiys-data (s)
+
+    # pick interval for v_1 and v_2
+    # calculate v_1_mean and v_2_mean with average and stdv for uncertainty
+
+    # calculate DeltaV_21_mean with average and pm from uncertainty
+
+    #export to file as DeltaV_21_mean for every DX-position with uncertainty in Delta_21_mean_pm
+
+
+    quit()
+
+if eta_Calc:
+    v_f = 10.010125 # (m/s) from S-analysis, 2022-05-03
+    v_f_pm = 0.023056 # (m/s) from standard deviation of mean v_f from S-analysis, 2022-05-03
+    V = 305 #(V) from lablogg, 2022-05-03
+    V_pm = 5 #(V)
+    m = 0.11820 # (kg), mass projectile
+    m_pm = 0.00005 #(kg)
+    C = 560*1e-6 # (F) capacitor Farad
+    C_pm = C*0.10/2 # uncertainty Farad from E12-series (10%, but we have pm so divide by 2)
+    N_c = 5 #5 capacitors
+
+    E_capacitors = N_c*(1/2)*C*V**2
+    E_projectile = (1/2)*m*v_f**2
+
+    eta = E_projectile/E_capacitors # = m*v^2 / c*V^2
+
+    #error propagation formula, cal. by hand:
+    eta_pm_max = m_pm*abs(v_f**2/(C*V**2)) + v_f_pm*abs(2*m*v_f/(C*V**2)) + C_pm*abs((-1)*m*v_f/(C**2*V**2)) + V_pm*abs((-2)*m*v_f/(C*V**3))
+    print("eta = ("+str(eta*100) +" \pm_max "+str(eta_pm_max*100) + ") %")
 
     quit()
 
