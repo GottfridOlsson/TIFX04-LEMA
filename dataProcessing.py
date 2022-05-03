@@ -63,47 +63,13 @@ def gaussianFilter1D(array1D, sigma):
     return gaussian_filter1d(array1D, sigma)
 
 
-# FILE PATHS #
+
 
 def get_filePaths_ofFilenames_inFolder(filePathToFolder, filenames):
     filePaths = []
     for i in range(len(filenames)):
         filePaths.append(filePathToFolder + backSlash + filenames[i])
     return filePaths
-
-
-
-
-## CONSTANTS FOR THIS PROJECT ##
-
-currentPath = os.path.abspath(os.getcwd())
-backSlash = "\\"
-raw_CSV_folder_path       = currentPath + backSlash + "Raw CSV"
-formatted_CSV_folder_path = currentPath + backSlash + "Formatted CSV"
-processed_CSV_folder_path = currentPath + backSlash + "Processed CSV"
-# S for 'final measurements of speed (10m/s)' and DX for 'Diode x-position'
-filenames_S  = ['S13_20220426_1524.csv', 'S14_20220426_1526.csv', 'S15_20220426_1529.csv', 'S16_20220426_1534.csv', 'S17_20220426_1539.csv', 'S18_20220426_1547.csv', 'S19_20220426_1550.csv', 'S20_20220426_1552.csv', 'S21_20220426_1605.csv', 'S22_20220426_1609.csv', 'S23_20220426_1612.csv']
-filenames_DX = ['DX_32mm_20220426.csv',  'DX_33mm_20220426.csv',  'DX_34mm_20220426.csv',  'DX_35mm_20220426.csv',  'DX_36mm_20220426.csv',  'DX_37mm_20220426.csv',  'DX_38mm_20220426.csv',  'DX_39mm_20220426.csv',  'DX_40mm_20220426.csv',  'DX_41mm_20220426.csv',  'DX_42mm_20220426.csv',  'DX_43mm_20220426.csv',  'DX_44mm_20220426.csv']
-filenames_I  = ['I_Steg1_20220429_SD2.csv', 'I_Steg2_20220429_SD2.csv', 'I_Steg3_20220426.csv', 'I_Steg4_20220426.csv', 'I_Steg5_20220426.csv']
-filename_I_allCoils = ['I_allCoils_20220426.csv']
-filePaths_S  = get_filePaths_ofFilenames_inFolder(formatted_CSV_folder_path, filenames_S)
-filePaths_DX = get_filePaths_ofFilenames_inFolder(formatted_CSV_folder_path, filenames_DX)
-filePaths_I  = get_filePaths_ofFilenames_inFolder(raw_CSV_folder_path,       filenames_I)
-filePath_I_allCoils_raw = raw_CSV_folder_path + backSlash + "I_allCoils_20220426.csv"
-filePath_S13_through_S23_time_Xpos           = formatted_CSV_folder_path + backSlash + "S_time_Xpos_20220428.csv"
-filePath_processed_S13_through_S23_time_Xvel = processed_CSV_folder_path + backSlash + "S_time_Xvel_20220428_sigma5.csv"
-
-filePath_simulated_S_data_CSV           = formatted_CSV_folder_path + backSlash + "Simulated_S_data_20220428.csv" 
-filePath_processed_and_simulated_S_data = processed_CSV_folder_path + backSlash + "Processed_and_simulated_S_Xvel_sigma5_20220428.csv"
-
-filePath_I_all_individual_coils           = processed_CSV_folder_path + backSlash + "I_Steg12345_20220428.csv"
-filePath_I_all_individual_coils_processed = processed_CSV_folder_path + backSlash + "I_Steg12345_20220428_correctedCurrent.csv"
-filePath_I_allCoils = processed_CSV_folder_path + backSlash + "I_allCoils_20220428_nonCorrected.csv"
-
-filePath_processedSimulatedSdata_IallCoils = processed_CSV_folder_path + backSlash + "processedSimulatedSdata_and_IallCoils_sameKfactor_20220429.csv"
-
-filePath_DX_all = formatted_CSV_folder_path + backSlash + "DX_allPos_202205030.csv"
-
 
 def get_columnData_from_CSV(filePath, column):
     CSV = read_CSV(filePath)
@@ -191,6 +157,39 @@ def add_all_columns_from_CSV_to_CSV(from_CSV_path, CSV_path, new_CSV_path):
 
 
 
+## CONSTANTS FOR THIS PROJECT ##
+
+currentPath = os.path.abspath(os.getcwd())
+backSlash = "\\"
+raw_CSV_folder_path       = currentPath + backSlash + "Raw CSV"
+formatted_CSV_folder_path = currentPath + backSlash + "Formatted CSV"
+processed_CSV_folder_path = currentPath + backSlash + "Processed CSV"
+# S for 'final measurements of speed (10m/s)' and DX for 'Diode x-position'
+filenames_S  = ['S13_20220426_1524.csv', 'S14_20220426_1526.csv', 'S15_20220426_1529.csv', 'S16_20220426_1534.csv', 'S17_20220426_1539.csv', 'S18_20220426_1547.csv', 'S19_20220426_1550.csv', 'S20_20220426_1552.csv', 'S21_20220426_1605.csv', 'S22_20220426_1609.csv', 'S23_20220426_1612.csv']
+filenames_DX = ['DX_32mm_20220426.csv',  'DX_33mm_20220426.csv',  'DX_34mm_20220426.csv',  'DX_35mm_20220426.csv',  'DX_36mm_20220426.csv',  'DX_37mm_20220426.csv',  'DX_38mm_20220426.csv',  'DX_39mm_20220426.csv',  'DX_40mm_20220426.csv',  'DX_41mm_20220426.csv',  'DX_42mm_20220426.csv',  'DX_43mm_20220426.csv',  'DX_44mm_20220426.csv']
+filenames_I  = ['I_Steg1_20220429_SD2.csv', 'I_Steg2_20220429_SD2.csv', 'I_Steg3_20220426.csv', 'I_Steg4_20220426.csv', 'I_Steg5_20220426.csv']
+filename_I_allCoils = ['I_allCoils_20220426.csv']
+filePaths_S  = get_filePaths_ofFilenames_inFolder(formatted_CSV_folder_path, filenames_S)
+filePaths_DX = get_filePaths_ofFilenames_inFolder(formatted_CSV_folder_path, filenames_DX)
+filePaths_I  = get_filePaths_ofFilenames_inFolder(raw_CSV_folder_path,       filenames_I)
+filePath_I_allCoils_raw = raw_CSV_folder_path + backSlash + "I_allCoils_20220426.csv"
+filePath_S13_through_S23_time_Xpos           = formatted_CSV_folder_path + backSlash + "S_time_Xpos_20220428.csv"
+filePath_processed_S13_through_S23_time_Xvel = processed_CSV_folder_path + backSlash + "S_time_Xvel_20220428_sigma5.csv"
+
+filePath_simulated_S_data_CSV           = formatted_CSV_folder_path + backSlash + "Simulated_S_data_20220428.csv" 
+filePath_processed_and_simulated_S_data = processed_CSV_folder_path + backSlash + "Processed_and_simulated_S_Xvel_sigma5_20220428.csv"
+
+filePath_I_all_individual_coils           = processed_CSV_folder_path + backSlash + "I_Steg12345_20220428.csv"
+filePath_I_all_individual_coils_processed = processed_CSV_folder_path + backSlash + "I_Steg12345_20220428_correctedCurrent.csv"
+filePath_I_allCoils = processed_CSV_folder_path + backSlash + "I_allCoils_20220428_nonCorrected.csv"
+
+filePath_processedSimulatedSdata_IallCoils = processed_CSV_folder_path + backSlash + "processedSimulatedSdata_and_IallCoils_sameKfactor_20220429.csv"
+
+filePath_DX_all       = formatted_CSV_folder_path + backSlash + "DX_allPos_20220503.csv"
+filePath_DX_processed = processed_CSV_folder_path + backSlash + "DX_processed_20220503.csv"
+
+
+
 
 
 ## MAIN ##
@@ -200,10 +199,11 @@ plot_Sdata = False #plot "gaussed and derivative and noZeroed"-data
 add_simulatedData_to_S = False
 
 I_coils_analysis = False
-combineIallCoils_and_Smeasurement= True
+combineIallCoils_and_Smeasurement= False
 
-DX_stage2_analysis = True
-plot_DXdata = True
+DX_stage2_analysis = True #measurements for stage 2, X-position of sensor (diode)
+#plot_DXdata_gaussed = False
+plot_DXdata_sameStartTime = True
 
 eta_Calc = False
 
@@ -224,8 +224,8 @@ if S_analysis:
     sigma = 5 #arbitrarily chosen as 5
     V_x_S  = [None for x in Xpos_range]
     time_S = [None for x in Xpos_range]
-    Xpos_S_gaussed = [None for x in Xpos_range]
     V_x_header = [None for x in Xpos_range]
+    Xpos_S_gaussed = [None for x in Xpos_range]
  
     for i in Xpos_range:
         # gauss filter per column (Xpos for each S-measurement)
@@ -238,7 +238,7 @@ if S_analysis:
 
         # remove values from velocity that are below a certain lower limit (+ som buffer rows(?)) to align S-measurements in time with each other
         V_x_S_i = V_x_S[i-column_start]
-        minSpeed = 80/1000 # 50 mm/s = 50/1000 m/s
+        minSpeed = 80/1000 # 80 mm/s = 80/1000 m/s, from figure
         for k in range(len(V_x_S_i)):
             if V_x_S_i[k] > minSpeed:
                 firstFastIndex = k
@@ -408,7 +408,6 @@ if DX_stage2_analysis:
     N_DX_measurements = 13 +1 #number of DX-meas plus 1 bcs. index
     for i in range(1,N_DX_measurements):
         Xpos.append(data[header[i]])
-        #print(Xpos[i-1])
 
     # apply gaussian for each column in Xpos_range before velcity calc
     sigma = 5 #arbitrarily chosen as 5
@@ -434,14 +433,13 @@ if DX_stage2_analysis:
             if V_x_i[k] > minSpeed:
                 firstFastIndex = k
                 break
-        print(firstFastIndex)
         numIndexesBeforeMinSpeed = 50 #in order to get data where dx/dt = 0 in figure
         indexes = range(firstFastIndex-numIndexesBeforeMinSpeed, len(V_x_i))
 
         V_x_i_selected = [V_x_i[x] for x in indexes]
         time_selected  = [time_noZeroes[x] for x in indexes]
 
-        removeNumLastDataPoints = 10 #remove last points, since numerical derivative gets funky there
+        removeNumLastDataPoints = 22 #remove last points, since numerical derivative gets funky there
         V_x_i_selected = V_x_i_selected[0:len(V_x_i_selected)-removeNumLastDataPoints]
         time_selected  = time_selected[0:len(time_selected)-removeNumLastDataPoints]
      
@@ -449,26 +447,49 @@ if DX_stage2_analysis:
         V_x[i-1] = V_x_i_selected
         t = time_selected #_noZeroes
         
-        plt.plot(t, V_x[i-1], label=str(header[i])+" (DX calc. dx/dt, sigma="+str(sigma)+")")
+        #plt.plot(t, V_x[i-1], label=str(header[i])+" (DX calc. dx/dt, sigma="+str(sigma)+")")
         
-    if plot_DXdata:
+    #if plot_DXdata_gaussed:
+        #plt.legend()
+        #plt.show()
+
+    arbitraryStartTimes_ms = []
+    for i in range(len(V_x)):
+        arbitraryStartTimes_ms.append(time[0:len(V_x[i-1])]*1000) # (s)*1000 = (ms)
+        plt.plot(arbitraryStartTimes_ms[i], V_x[i-1], label=str(header[i])+" (DX calc. dx/dt, sigma="+str(sigma)+")" )
+
+    if plot_DXdata_sameStartTime:
         plt.legend()
         plt.show()
 
 
-    # YOU ARE HERE: TODO: arbitrary time and plot all again!  //2022-05-03
-    ######################################
+    # pick times to calculate v_1 and v_2 (times from figure, plot_DXdata_sameStartTime)
+    t_v1 = 35 #(ms)
+    t_v2 = 60 #(ms)
+    tol = 0.0005 #this number gives correct value of time 35ms and 60ms
+    
+    v_1 = []
+    v_2 = []
+    for i in range(len(V_x)):
+        index_v_1 = np.where(np.isclose(arbitraryStartTimes_ms[i], t_v1, tol))
+        index_v_2 = np.where(np.isclose(arbitraryStartTimes_ms[i], t_v2, tol))
+        index_v_1 = int(index_v_1[0])
+        index_v_2 = int(index_v_2[0])
+        v_1.append(V_x[i][index_v_1])
+        v_2.append(V_x[i][index_v_2])
+    
 
-    arbitraryStartTime_ms = []
-    dt = 0.0001 #timestep in Qualiys-data (s)
-
-    # pick interval for v_1 and v_2
-    # calculate v_1_mean and v_2_mean with average and stdv for uncertainty
-
-    # calculate DeltaV_21_mean with average and pm from uncertainty
-
-    #export to file as DeltaV_21_mean for every DX-position with uncertainty in Delta_21_mean_pm
-
+    Delta_v_21 = [abs(x-y) for x,y in zip(v_2, v_1)] #https://stackoverflow.com/questions/23173294/how-to-mathematically-subtract-two-lists-in-python
+    
+    processedFilePath = filePath_DX_processed
+    header = ["Calculated Delta v_21 (m/s)", "Stage 2: DX distance (mm)"]
+    DX_mm_data = [32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44] #couldn't be bothered to make this programmatically
+    Delta_v_data = [Delta_v_21, DX_mm_data]
+    Delta_v_dataFrame = pd.DataFrame(Delta_v_data, header).transpose()
+    write_dataFrame_to_CSV(Delta_v_dataFrame, processedFilePath)
+    
+    # TODO: 
+    #how to calculate uncertainty in Delta_v[i] for DXi?
 
     quit()
 
