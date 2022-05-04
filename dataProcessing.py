@@ -186,7 +186,7 @@ filePath_I_allCoils = processed_CSV_folder_path + backSlash + "I_allCoils_202204
 filePath_processedSimulatedSdata_IallCoils = processed_CSV_folder_path + backSlash + "processedSimulatedSdata_and_IallCoils_sameKfactor_20220429.csv"
 
 filePath_DX_all       = formatted_CSV_folder_path + backSlash + "DX_allPos_20220503.csv"
-filePath_DX_processed = processed_CSV_folder_path + backSlash + "DX_processed_20220503.csv"
+filePath_DX_processed = processed_CSV_folder_path + backSlash + "DX_processed_20220504.csv"
 
 
 
@@ -203,7 +203,7 @@ combineIallCoils_and_Smeasurement= False
 
 DX_stage2_analysis = True #measurements for stage 2, X-position of sensor (diode)
 #plot_DXdata_gaussed = False
-plot_DXdata_sameStartTime = True
+plot_DXdata_sameStartTime = False
 
 eta_Calc = False
 
@@ -439,7 +439,7 @@ if DX_stage2_analysis:
         V_x_i_selected = [V_x_i[x] for x in indexes]
         time_selected  = [time_noZeroes[x] for x in indexes]
 
-        removeNumLastDataPoints = 22 #remove last points, since numerical derivative gets funky there
+        removeNumLastDataPoints = 20 #remove last points, since numerical derivative gets funky there
         V_x_i_selected = V_x_i_selected[0:len(V_x_i_selected)-removeNumLastDataPoints]
         time_selected  = time_selected[0:len(time_selected)-removeNumLastDataPoints]
      
@@ -465,7 +465,7 @@ if DX_stage2_analysis:
 
     # pick times to calculate v_1 and v_2 (times from figure, plot_DXdata_sameStartTime)
     t_v1 = 35 #(ms)
-    t_v2 = 60 #(ms)
+    t_v2 = 58 #60 #(ms), 59 looks good
     tol = 0.0005 #this number gives correct value of time 35ms and 60ms
     
     v_1 = []
@@ -482,11 +482,12 @@ if DX_stage2_analysis:
     Delta_v_21 = [abs(x-y) for x,y in zip(v_2, v_1)] #https://stackoverflow.com/questions/23173294/how-to-mathematically-subtract-two-lists-in-python
     
     processedFilePath = filePath_DX_processed
-    header = ["Calculated Delta v_21 (m/s)", "Stage 2: DX distance (mm)"]
+    header = ["Calculated Delta v_21 (m/s) at times t1: "+str(t_v1)+" (ms) and t2: "+str(t_v2)+" (ms)", "Stage 2: DX distance (mm)"]
     DX_mm_data = [32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44] #couldn't be bothered to make this programmatically
     Delta_v_data = [Delta_v_21, DX_mm_data]
     Delta_v_dataFrame = pd.DataFrame(Delta_v_data, header).transpose()
     write_dataFrame_to_CSV(Delta_v_dataFrame, processedFilePath)
+    print(Delta_v_21)
     
     # TODO: 
     #how to calculate uncertainty in Delta_v[i] for DXi?
