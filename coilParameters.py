@@ -58,7 +58,7 @@ R      = [ [24.5, 25.25],       [22.0, 22.0],   [21.0, 21.0],   [19.75, 19.9],  
 R_pm   = [ [0.25, 0.3],         [0.25, 0.25],   [0.25, 0.25],   [0.25, 0.1],        [0.2, 0.25] ]       # [mm], uncertainty plus-minus
 
 m      = [ [196.20, 195.67],    [126.8, 126.8], [86.6, 86.7],   [75.8, 75.8],       [64.8, 64.8] ]      # [g], mass (all wire and the 'gift string' used to hold the coil together)
-m_pm   = [ [0.005, 0.005],      [0.05, 0.05],   [0.05, 0.05],   [0.05, 0.05],       [0.05, 0.05] ]      # [mm], uncertainty plus-minus
+m_pm   = [ [0.005, 0.005],      [0.05, 0.05],   [0.05, 0.05],   [0.05, 0.05],       [0.05, 0.05] ]      # [g], uncertainty plus-minus
 
 Ohm    = [ [4.54, 4.54],        [2.90, 2.90],   [2.10, 2.10],   [1.84, 1.84],       [1.58, 1.60] ]      # [Ohm], resistance
 Ohm_pm = [ [0.005, 0.005],      [0.05, 0.05],   [0.05, 0.05],   [0.005, 0.005],     [0.005, 0.005] ]    # [Ohm], uncertainty plus-minus
@@ -67,8 +67,10 @@ L      = [ [9.45, 9.54],        [4.63, 4.63],   [2.58, 2.64],   [1.969, 1.940], 
 L_pm   = [ [0.005, 0.005],      [0.005, 0.005], [0.005, 0.005], [0.0005, 0.0005],   [0.005, 0.005] ]    # [mH], uncertainty plus-minus
 
 
-parameterStrings = ["$r$ (\si{\milli\meter})", "$R$ (\si{\milli\meter})", "$d=t$ (\si{\milli\meter})", "$s_{\mathrm{wire}}$ (\si{\meter})", "$L$ (\si{\milli\henry})", "$L_{\mathrm{coupled}}$ (XSP$i$) (\si{\milli\henry})", "$\Omega$ ($\Omega$)", "$m$ (\si{\gram})"] #for table in Latex
-
+parameterStrings  = ["$\coilr$ (\si{\milli\meter})", "$\coilR$ (\si{\milli\meter})", "$\coild$ (\si{\milli\meter})", "$\wires$ (\si{\meter})", "$\genL$ (\si{\milli\henry})", "$\coilL$ (\si{\milli\henry})", "$\Omega$ ($\Omega$)", "$\projm$ (\si{\gram})"] #for table in Latex
+coilNumberStrings = [ ["1A", "1B"], ["2A", "2B"], ["3A", "3B"], ["4A", "4B"], ["5A", "5B"] ]
+matrixTransposed    = [r, R, t, L_wireInCoil, L, Ohm, m]
+matrixTransposed_pm = [r_pm, R_pm, t_pm, L_wireInCoil_pm, L_pm, Ohm_pm, m_pm]
 printTableDataLineAllCoils_bool = False
 printTableDataLineAllCoilsTransposed_bool = True
 
@@ -85,10 +87,26 @@ if printTableDataLineAllCoils_bool:
 
 
 if printTableDataLineAllCoilsTransposed_bool:
-    matrixTransposed = [r, r_pm, R, R_pm, t, t_pm, L_wireInCoil, L_wireInCoil_pm, L, L_pm, Ohm, Ohm_pm, m, m_pm]
-    for i in range(len(matrixTransposed)):
-        printTableDataLineAllCoils(parameterStrings[i], matrixTransposed[i][0], matrixTransposed[i][1]) #smth smth
-        #print(matrixTransposed[i][0])
+   # print(matrixTransposed)
+    also   = ' & '
+    pm     = ' $\pm$ '
+    newRow = ' \\\\ \\addlinespace' # "\\ \addlinespace" in Latex
+    rowString = ""
+
+    for i in range(len(coilNumberStrings)):
+        rowString = ""
+        for k in range(2):
+            rowString = str(coilNumberStrings[i][k])
+
+            for j in range(7):
+                value    = matrixTransposed[j][i][k]
+                value_pm = matrixTransposed_pm[j][i][k]
+                
+                if j in range(3,7): #remove uncertainty for: s, L, Ohm, m
+                    rowString += str(also) + str(value).replace('.', ',')
+                else:
+                    rowString += str(also) + str(value).replace('.', ',') + str(pm) + str(value_pm).replace('.', ',')     
+            rowString += str(newRow)
+            print(str(rowString))
     
-    #TODO: print each row (column) instead of column (row) : matrix is transposed w.r.t. what is in Resultat right now!
-    # //2022-05-02, 18:56
+    quit()

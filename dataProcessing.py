@@ -201,11 +201,11 @@ add_simulatedData_to_S = False
 I_coils_analysis = False
 combineIallCoils_and_Smeasurement= False
 
-DX_stage2_analysis = True #measurements for stage 2, X-position of sensor (diode)
+DX_stage2_analysis = False #measurements for stage 2, X-position of sensor (diode)
 #plot_DXdata_gaussed = False
 plot_DXdata_sameStartTime = False
 
-eta_Calc = False
+eta_Calc = True
 
 if S_analysis:
     print("ANALYSIS: S-measurements")
@@ -495,8 +495,8 @@ if DX_stage2_analysis:
     quit()
 
 if eta_Calc:
-    v_f = 10.010125 # (m/s) from S-analysis, 2022-05-03
-    v_f_pm = 0.023056 # (m/s) from standard deviation of mean v_f from S-analysis, 2022-05-03
+    v_f = 10.01 # (m/s) from S-analysis, 2022-05-03
+    v_f_pm = 0.07 # (m/s) from standard deviation of mean v_f from S-analysis, 2022-05-03
     V = 305 #(V) from lablogg, 2022-05-03
     V_pm = 5 #(V)
     m = 0.11820 # (kg), mass projectile
