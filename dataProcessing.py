@@ -2,7 +2,7 @@
 #        Name: TIFX04-22-82, DataProcessing LEMA
 #      Author: GOTTFRID OLSSON 
 #     Created: 2022-04-22, 13:55
-#     Updated: 2022-05-03, 11:17
+#     Updated: 2022-05-06, 17:51
 #       About: Takes in CSV-data från Qualisys measurement
 #              and applies gaussian filter and excecutes a
 #              numerical derivative to get velocity
@@ -205,7 +205,8 @@ DX_stage2_analysis = False #measurements for stage 2, X-position of sensor (diod
 #plot_DXdata_gaussed = False
 plot_DXdata_sameStartTime = False
 
-eta_Calc = True
+eta_calc = True
+eta_calc_per_stage = True
 
 if S_analysis:
     print("ANALYSIS: S-measurements")
@@ -494,25 +495,61 @@ if DX_stage2_analysis:
 
     quit()
 
-if eta_Calc:
+if eta_calc:
     v_f = 10.01 # (m/s) from S-analysis, 2022-05-03
     v_f_pm = 0.07 # (m/s) from standard deviation of mean v_f from S-analysis, 2022-05-03
-    V = 305 #(V) from lablogg, 2022-05-03
-    V_pm = 5 #(V)
+    u = 305 #(V) from lablogg, 2022-05-03
+    u_pm = 5 #(V)
     m = 0.11820 # (kg), mass projectile
     m_pm = 0.00005 #(kg)
     C = 560*1e-6 # (F) capacitor Farad
-    C_pm = C*0.10/2 # uncertainty Farad from E12-series (10%, but we have pm so divide by 2)
+    C_pm = C*0.20/2 # uncertainty Farad from E12-series (10%, but we have pm so divide by 2)
     N_c = 5 #5 capacitors
 
-    E_capacitors = N_c*(1/2)*C*V**2
+    E_capacitors = N_c*(1/2)*C*u**2
     E_projectile = (1/2)*m*v_f**2
 
-    eta = E_projectile/E_capacitors # = m*v^2 / c*V^2
+    eta = E_projectile/E_capacitors # = m*v^2 / C*V^2
 
-    #error propagation formula, cal. by hand:
-    eta_pm_max = m_pm*abs(v_f**2/(C*V**2)) + v_f_pm*abs(2*m*v_f/(C*V**2)) + C_pm*abs((-1)*m*v_f/(C**2*V**2)) + V_pm*abs((-2)*m*v_f/(C*V**3))
-    print("eta = ("+str(eta*100) +" \pm_max "+str(eta_pm_max*100) + ") %")
+    #error propagation formula (formula: F(x_1, x_2, ..., x_n) has \pm DeltaF : DeltaF^2 = sum_{i=1}^{n} (dF/dx_i * Deltax_i )^2 )
+    #eta_pm_max = m_pm*abs(v_f**2/(C*u**2)) + v_f_pm*abs(2*m*v_f/(C*u**2)) + C_pm*abs((-1)*m*v_f/(C**2*u**2)) + u_pm*abs((-2)*m*v_f/(C*u**3))
+    #eta_pm_max_test = m*v_f**2/(N_c*C*u**2) * ( m_pm/m + 2*v_f_pm/v_f + C_pm/C + 2*u_pm/u) 
+    eta_pm_exakt = m*v_f**2/(N_c*C*u**2) * np.sqrt( (m_pm/m)**2 + (2*v_f_pm/v_f)**2 + (C_pm/C)**2 + (2*u_pm/u)**2 )
+    #print("Total eta = ("+str(eta*100) +" \pm_max "+str(eta_pm_max*100) + ") % (manual errorpropagation)")
+    #print("Total eta = ("+str(eta*100) +" \pm_max "+str(eta_pm_max_test*100) + ") % (manual test errorpropagation)")
+    print("Total eta = ("+str(eta*100) +" \pm_max "+str(eta_pm_exakt*100) + ") % (exakt errorpropagation)")
+
+    if eta_calc_per_stage:
+        v_in_stage     = [0, 3.6, 5.8, 7.4, 8.8] #from figure
+        v_in_stage_pm  = [0, 0.05, 0.05, 0.05, 0.05] #from figure
+    
+        v_out_stage    = [3.6, 5.8, 7.4, 8.8, 10.01]
+        v_out_stage_pm = [0.05, 0.05, 0.05, 0.05, 0.05]
+        
+
+        v_out_2_minus_v_in_2_stage = []
+        delta_vin_vout_squared_stage_pm = []
+        for j in range(len(v_in_stage)):
+            v_out_2_minus_v_in_2_stage.append(v_out_stage[j]**2 - v_in_stage[j]**2)
+            
+            #errorpropagation formula for v_out^2 - v_in^2: (calc. exakt by hand, formula: DeltaF^2 = sum_i (dF/dx_i * Deltax_i)^2 )
+            delta_vin_vout_squared_stage_pm.append( 2*np.sqrt(v_in_stage[j]**2 * v_in_stage_pm[j]**2 + v_out_stage[j]**2 * v_out_stage_pm[j]**2) )
+
+
+        #deltaV_stage    = [3.6, 2.22, 1.6, 1.40, 1.20]  #(m/s)
+        deltaV_stage_pm = [0.1, 0.05, 0.1, 0.05, 0.05] #(m/s)
+        C_stage    = [560*1e-6, 560*1e-6, 560*1e-6, 560*1e-6, 560*1e-6] #(farad)
+        C_stage_pm = [23*1e-6, 23*1e-6, 23*1e-6, 23*1e-6, 23*1e-6] #(farad)
+        #C_stage *= 10**(-6) #(farad)
+        #C_stage_pm *= 10**(-6) #(farad)
+        
+        for k in range(len(v_out_2_minus_v_in_2_stage)):
+            eta = m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*u**2)
+             # eta_pm_max = m_pm*abs(v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*u**2)) + deltaV_stage_pm[k]*abs(2*m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*u**2)) + C_stage_pm[k]*abs((-1)*m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]**2*u**2)) + V_pm*abs((-2)*m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*V**3))
+            # error propagation formula (Exakt)
+            eta_pm_exakt = m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*u**2) * np.sqrt( (m_pm/m)**2 + (delta_vin_vout_squared_stage_pm[k]/v_out_2_minus_v_in_2_stage[k])**2 + (C_stage_pm[k]/C_stage[k])**2 + (u_pm/u)**2 )
+
+            print("Stage "+ str(k+1)+"; eta = ("+str(eta*100) +" \pm_max "+str(eta_pm_exakt*100) + ") % (exakt error propagation)")
 
     quit()
 
