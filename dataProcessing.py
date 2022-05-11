@@ -2,7 +2,7 @@
 #        Name: TIFX04-22-82, DataProcessing LEMA
 #      Author: GOTTFRID OLSSON 
 #     Created: 2022-04-22, 13:55
-#     Updated: 2022-05-06, 17:51
+#     Updated: 2022-05-11, 14:10
 #       About: Takes in CSV-data från Qualisys measurement
 #              and applies gaussian filter and excecutes a
 #              numerical derivative to get velocity
@@ -497,7 +497,8 @@ if DX_stage2_analysis:
 
 if eta_calc:
     v_f = 10.01 # (m/s) from S-analysis, 2022-05-03
-    v_f_pm = 0.07 # (m/s) from standard deviation of mean v_f from S-analysis, 2022-05-03
+    v_f_pm = 0.07 # (m/s) from standard deviation of v_f from S-analysis, 2022-05-03
+    v_f_stdv = v_f_pm
     u = 305 #(V) from lablogg, 2022-05-03
     u_pm = 5 #(V)
     m = 0.11820 # (kg), mass projectile
@@ -508,28 +509,37 @@ if eta_calc:
     C_pm = np.average(C_stage_pm)
     N_c = len(C_stage) #5 capacitors
 
-    E_capacitors = 0
+    #2022-05-11: assume that our uncertainties in the measurements are a uniform distriution (largest uncertainty, most conservative)
+    # use standard deviation for that distribution in the error-propagation formula
+    # therefore, convert our measured intervalls (plus-minus a) into standard deviation for the uniform distribution (sigma_uniform = 2*a/sqrt(12) = a/sqrt(3) )
     
+    def uniform_pm_uncertainty_into_stdv(pm_value):
+        return pm_value/np.sqrt(3)
+    
+    u_stdv = uniform_pm_uncertainty_into_stdv(u_pm)
+    m_stdv = uniform_pm_uncertainty_into_stdv(m_pm)
+    C_stdv = uniform_pm_uncertainty_into_stdv(C_pm)
+
+    E_capacitors = 0    
     for i in range(N_c):
         E_capacitors += (1/2)*C_stage[i]*u**2
-        print(E_capacitors)
     E_projectile = (1/2)*m*v_f**2
 
     eta = E_projectile/E_capacitors # = m*v^2 / C*V^2
 
     #error propagation formula (formula: F(x_1, x_2, ..., x_n) has \pm DeltaF : DeltaF^2 = sum_{i=1}^{n} (dF/dx_i * Deltax_i )^2 )
-    eta_pm_exakt = m*v_f**2/(N_c*C*u**2) * np.sqrt( (m_pm/m)**2 + (2*v_f_pm/v_f)**2 + (C_pm/C)**2 + (2*u_pm/u)**2 )
+    #eta_pm          = m*v_f**2/(N_c*C*u**2) * np.sqrt( (m_pm/m)**2 + (2*v_f_pm/v_f)**2 + (C_pm/C)**2 + (2*u_pm/u)**2 )
+    eta_pm_fromStdv = m*v_f**2/(N_c*C*u**2) * np.sqrt( (m_stdv/m)**2 + (2*v_f_stdv/v_f)**2 + (C_stdv/C)**2 + (2*u_stdv/u)**2 )
+    #print("Total eta = ("+str(eta*100) +" \pm_max  "+str(eta_pm*100) + ") % (pm error propagation)")
+    print("Total    eta = ("+str(eta*100) +" \pm_stdv "+str(eta_pm_fromStdv*100) + ") % (standard div. error propagation)")
 
-    print("Total eta = ("+str(eta*100) +" \pm_max "+str(eta_pm_exakt*100) + ") % (exakt errorpropagation)")
 
     if eta_calc_per_stage:
         v_in_stage     = [0, 3.6, 5.8, 7.4, 8.8] #from figure
         v_in_stage_pm  = [0, 0.05, 0.05, 0.05, 0.05] #from figure
-    
         v_out_stage    = [3.6, 5.8, 7.4, 8.8, 10.01]
         v_out_stage_pm = [0.05, 0.05, 0.05, 0.05, 0.05]
         
-
         v_out_2_minus_v_in_2_stage = []
         delta_vin_vout_squared_stage_pm = []
         for j in range(len(v_in_stage)):
@@ -543,14 +553,23 @@ if eta_calc:
         C_stage    = [493*1e-6, 488*1e-6, 495*1e-6, 501*1e-6, 492*1e-6] #(farad)
         C_stage_pm = [0.5*1e-6, 0.5*1e-6, 0.5*1e-6, 0.5*1e-6, 0.5*1e-6] #(farad)
         
+        #2022-05-11: assume that our uncertainties in the measurements are a uniform distriution (largest uncertainty, most conservative)
+        # use standard deviation for that distribution in the error-propagation formula
+        # therefore, convert our measured intervalls (plus-minus a) into standard deviation for the uniform distribution (sigma_uniform = 2*a/sqrt(12) = a/sqrt(3) )
+    
+        delta_vin_vout_squared_stage_stdv = uniform_pm_uncertainty_into_stdv(delta_vin_vout_squared_stage_pm)
+        C_stage_stdv = uniform_pm_uncertainty_into_stdv(C_stage_pm)
+
+
+
         for k in range(len(v_out_2_minus_v_in_2_stage)):
             eta = m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*u**2)
              # eta_pm_max = m_pm*abs(v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*u**2)) + deltaV_stage_pm[k]*abs(2*m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*u**2)) + C_stage_pm[k]*abs((-1)*m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]**2*u**2)) + V_pm*abs((-2)*m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*V**3))
             # error propagation formula (Exakt)
-            eta_pm_exakt = m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*u**2) * np.sqrt( (m_pm/m)**2 + (delta_vin_vout_squared_stage_pm[k]/v_out_2_minus_v_in_2_stage[k])**2 + (C_stage_pm[k]/C_stage[k])**2 + (2*u_pm/u)**2 )
-
-            print("Stage "+ str(k+1)+"; eta = ("+str(eta*100) +" \pm_max "+str(eta_pm_exakt*100) + ") % (exakt error propagation)")
-
+            #eta_pm          = m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*u**2) * np.sqrt( (m_pm/m)**2 + (delta_vin_vout_squared_stage_pm[k]/v_out_2_minus_v_in_2_stage[k])**2 + (C_stage_pm[k]/C_stage[k])**2 + (2*u_pm/u)**2 )
+            eta_pm_fromStdv = m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*u**2) * np.sqrt( (m_stdv/m)**2 + (delta_vin_vout_squared_stage_stdv[k]/v_out_2_minus_v_in_2_stage[k])**2 + (C_stage_stdv[k]/C_stage[k])**2 + (2*u_stdv/u)**2 )
+            #print("Stage "+ str(k+1)+"; eta = ("+str(eta*100) +" \pm_max  "+str(eta_pm*100) + ") % (pm error propagation)")
+            print("Stage "+ str(k+1)+"; eta = ("+str(eta*100) +" \pm_stdv "+str(eta_pm_fromStdv*100) + ") % (standard div. error propagation)")
     quit()
 
 
