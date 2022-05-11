@@ -504,7 +504,7 @@ if eta_calc:
     m = 0.11820 # (kg), mass projectile
     m_pm = 0.00005 #(kg)
     C_stage    = [493*1e-6, 488*1e-6, 495*1e-6, 501*1e-6, 492*1e-6] #(farad), measured: 2022-05-10
-    C_stage_pm = [0.5*1e-6, 0.5*1e-6, 0.5*1e-6, 0.5*1e-6, 0.5*1e-6] #(farad), measured: 2022-05-10
+    C_stage_pm = [1*1e-6, 1*1e-6, 1*1e-6, 1*1e-6, 1*1e-6] #(farad), measured: 2022-05-10
     C = np.average(C_stage)
     C_pm = np.average(C_stage_pm)
     N_c = len(C_stage) #5 capacitors
