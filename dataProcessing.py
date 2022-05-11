@@ -518,19 +518,20 @@ if eta_calc:
     
     u_stdv = uniform_pm_uncertainty_into_stdv(u_pm)
     m_stdv = uniform_pm_uncertainty_into_stdv(m_pm)
-    C_stdv = uniform_pm_uncertainty_into_stdv(C_pm)
+    C_stage_stdv = uniform_pm_uncertainty_into_stdv(C_stage_pm)
 
     E_capacitors = 0    
+    C_factor_pm_fromStdv = 0
     for i in range(N_c):
         E_capacitors += (1/2)*C_stage[i]*u**2
+        C_factor_pm_fromStdv += (2*C_stage_stdv[i]/C_stage[i])**2 # to sum over all stages in "eta_pm_fromStdv" below
     E_projectile = (1/2)*m*v_f**2
 
     eta = E_projectile/E_capacitors # = m*v^2 / C*V^2
 
-    #error propagation formula (formula: F(x_1, x_2, ..., x_n) has \pm DeltaF : DeltaF^2 = sum_{i=1}^{n} (dF/dx_i * Deltax_i )^2 )
-    #eta_pm          = m*v_f**2/(N_c*C*u**2) * np.sqrt( (m_pm/m)**2 + (2*v_f_pm/v_f)**2 + (C_pm/C)**2 + (2*u_pm/u)**2 )
-    eta_pm_fromStdv = m*v_f**2/(N_c*C*u**2) * np.sqrt( (m_stdv/m)**2 + (2*v_f_stdv/v_f)**2 + (C_stdv/C)**2 + (2*u_stdv/u)**2 )
-    #print("Total eta = ("+str(eta*100) +" \pm_max  "+str(eta_pm*100) + ") % (pm error propagation)")
+    SumC = sum(C_stage)
+    #this "eta_pl_fromStd" together with "C_factor_pm_fromStdv" is calculated by hand to ensure that it is correct //2022-05-11
+    eta_pm_fromStdv = m*v_f**2/(SumC*u**2) * np.sqrt( (m_stdv/m)**2 + (2*v_f_stdv/v_f)**2 + C_factor_pm_fromStdv + (2*u_stdv/u)**2 )
     print("Total    eta = ("+str(eta*100) +" \pm_stdv "+str(eta_pm_fromStdv*100) + ") % (standard div. error propagation)")
 
 
@@ -564,11 +565,9 @@ if eta_calc:
 
         for k in range(len(v_out_2_minus_v_in_2_stage)):
             eta = m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*u**2)
-             # eta_pm_max = m_pm*abs(v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*u**2)) + deltaV_stage_pm[k]*abs(2*m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*u**2)) + C_stage_pm[k]*abs((-1)*m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]**2*u**2)) + V_pm*abs((-2)*m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*V**3))
-            # error propagation formula (Exakt)
-            #eta_pm          = m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*u**2) * np.sqrt( (m_pm/m)**2 + (delta_vin_vout_squared_stage_pm[k]/v_out_2_minus_v_in_2_stage[k])**2 + (C_stage_pm[k]/C_stage[k])**2 + (2*u_pm/u)**2 )
+            
+                # note to self: no "2*delta_vin_vout_squared" in "eta_pm_fromStdv" since I treat delta_vin_vout as one variable, that is with exponent 1 in eta.
             eta_pm_fromStdv = m*v_out_2_minus_v_in_2_stage[k]/(C_stage[k]*u**2) * np.sqrt( (m_stdv/m)**2 + (delta_vin_vout_squared_stage_stdv[k]/v_out_2_minus_v_in_2_stage[k])**2 + (C_stage_stdv[k]/C_stage[k])**2 + (2*u_stdv/u)**2 )
-            #print("Stage "+ str(k+1)+"; eta = ("+str(eta*100) +" \pm_max  "+str(eta_pm*100) + ") % (pm error propagation)")
             print("Stage "+ str(k+1)+"; eta = ("+str(eta*100) +" \pm_stdv "+str(eta_pm_fromStdv*100) + ") % (standard div. error propagation)")
     quit()
 
