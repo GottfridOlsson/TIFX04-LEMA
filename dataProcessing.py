@@ -317,9 +317,9 @@ if S_analysis:
     # 2022-05-24: add energy vs time for projectile
     m = 0.1182 #[kg]
     kineticEnergy = []
-    kineticEnergy.append(m*V_x_average**2)
+    kineticEnergy.append([m*(i**2) for i in V_x_average])
     kineticEnergy = kineticEnergy[0]
-    print(kineticEnergy[0])#, kineticEnergy[-1])
+    print(kineticEnergy[0], kineticEnergy[-1])
 
     energy_header = "Kinetic energy (J)"
     V_x_dataFrame.insert(loc=0, column=energy_header, value=kineticEnergy)
