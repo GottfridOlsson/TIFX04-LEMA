@@ -2,7 +2,7 @@
 #        Name: TIFX04-22-82, DataProcessing LEMA
 #      Author: GOTTFRID OLSSON 
 #     Created: 2022-04-22, 13:55
-#     Updated: 2022-05-11, 14:10
+#     Updated: 2022-05-24, 17:26
 #       About: Takes in CSV-data från Qualisys measurement
 #              and applies gaussian filter and excecutes a
 #              numerical derivative to get velocity
@@ -188,15 +188,15 @@ filePath_processedSimulatedSdata_IallCoils = processed_CSV_folder_path + backSla
 filePath_DX_all       = formatted_CSV_folder_path + backSlash + "DX_allPos_20220503.csv"
 filePath_DX_processed = processed_CSV_folder_path + backSlash + "DX_processed_20220504.csv"
 
-
-
+filePath_kineticEnergy_only = processed_CSV_folder_path + backSlash + "KineticEnergy_only_20220524.csv"
+filePath_kineticEnergy_and_velocity = processed_CSV_folder_path + backSlash + "KineticEnergy_and_velocity_20220524.csv"
 
 
 ## MAIN ##
 
-S_analysis = False #measurements S13-S23 taken 20220426
+S_analysis = True #measurements S13-S23 taken 20220426
 plot_Sdata = False #plot "gaussed and derivative and noZeroed"-data
-add_simulatedData_to_S = False
+add_simulatedData_to_S = True
 
 I_coils_analysis = False
 combineIallCoils_and_Smeasurement= False
@@ -227,6 +227,7 @@ if S_analysis:
     time_S = [None for x in Xpos_range]
     V_x_header = [None for x in Xpos_range]
     Xpos_S_gaussed = [None for x in Xpos_range]
+
  
     for i in Xpos_range:
         # gauss filter per column (Xpos for each S-measurement)
@@ -253,7 +254,7 @@ if S_analysis:
         removeNumLastDataPoints = 20 #remove last 20 points, since numerical derivative gets funky there
         V_x_S_i_selected = V_x_S_i_selected[0:len(V_x_S_i_selected)-removeNumLastDataPoints]
         time_selected    = time_selected[0:len(time_selected)-removeNumLastDataPoints]
-     
+
         # plot to make sure it looks good
         t = time_selected
         time_S[i-column_start] = t
@@ -313,7 +314,17 @@ if S_analysis:
     sigma_f_weighterNumberOfAveragesSeries = sigma_f/np.sqrt(len(V_x_S_cut))
     print("v_f: "+str(V_f) + " m/s \n sigma_f_weighted_N: "+str(sigma_f_weighterNumberOfAveragesSeries) + " m/s \n t_f: ("+str(t_f)+" \pm "+str(tol)+") ms\n")
 
+    # 2022-05-24: add energy vs time for projectile
+    m = 0.1182 #[kg]
+    kineticEnergy = []
+    kineticEnergy.append(m*V_x_average**2)
+    kineticEnergy = kineticEnergy[0]
+    print(kineticEnergy[0])#, kineticEnergy[-1])
 
+    energy_header = "Kinetic energy (J)"
+    V_x_dataFrame.insert(loc=0, column=energy_header, value=kineticEnergy)
+    write_dataFrame_to_CSV(V_x_dataFrame, filePath_kineticEnergy_and_velocity)
+    # end 2022-05-24 energy
 
     quit()
     
