@@ -2,7 +2,7 @@
 #        Name: TIFX04-22-82, DataProcessing LEMA
 #      Author: GOTTFRID OLSSON 
 #     Created: 2022-04-22, 13:55
-#     Updated: 2022-05-24, 17:26
+#     Updated: 2022-05-24, 17:43
 #       About: Takes in CSV-data från Qualisys measurement
 #              and applies gaussian filter and excecutes a
 #              numerical derivative to get velocity
@@ -319,7 +319,6 @@ if S_analysis:
     kineticEnergy = []
     kineticEnergy.append([m*(i**2) for i in V_x_average])
     kineticEnergy = kineticEnergy[0]
-    print(kineticEnergy[0], kineticEnergy[-1])
 
     energy_header = "Kinetic energy (J)"
     V_x_dataFrame.insert(loc=0, column=energy_header, value=kineticEnergy)
