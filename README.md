@@ -2,7 +2,7 @@
 Data processing for our Bachelor thesis in applied physics (TIFX04-22-82) where we built and optimized a linear electromagnetic accelerator (LEMA).
 
 
-In #dataProcessing.py# CSV-files containing measurements are read. Then the data is processed based on the type of data.
+In ==dataProcessing.py== CSV-files containing measurements are read. Then the data is processed based on the type of data.
 
 "S_analysis" means analysis of 10 measurements taken directly after each other. 
 
