@@ -1,6 +1,5 @@
 # TIFX04-LEMA-DataProcessing
----
-Data processing for our Bachelor thesis in applied physics (TIFX04-22-82) where we built and optimized a linear electromagnetic accelerator (LEMA).
+Data processing (with raw data) for our Bachelor thesis in applied physics (TIFX04-22-82) where we built and optimized a linear electromagnetic accelerator (LEMA).
 
 
 In **dataProcessing.py** CSV-files containing measurements are read. Then the data is processed based on the type of data.
